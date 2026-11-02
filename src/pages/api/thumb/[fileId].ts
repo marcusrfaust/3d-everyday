@@ -7,11 +7,16 @@ import { d1query } from '../../../lib/d1';
 export const prerender = false;
 const LOCAL_CACHE_DIR = resolve(process.env.HOME ?? '/home/altas', '3dlib-cache');
 const MIME: Record<string, string> = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp'};
+// Placeholder neutro: thumb nunca devolve imagem quebrada — sem foto real, SVG 200.
+const PLACEHOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="720"><rect width="100%" height="100%" fill="#f0f0f0"/><text x="50%" y="50%" font-family="sans-serif" font-size="26" fill="#999" text-anchor="middle">3d-Everyday</text></svg>`;
+function semFoto(): Response {
+  return new Response(PLACEHOLDER_SVG, {status: 200, headers: {'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400'}});
+}
 export const GET: APIRoute = async ({ params }) => {
   const fileId = Number(params.fileId);
   if (!Number.isInteger(fileId)) return new Response('Not found', {status: 404});
   const rows = await d1query(`SELECT f.local_path AS lp, f.drive_url AS du FROM files f JOIN items i ON i.id = f.item_id WHERE f.id = ? AND f.kind = 'photo' AND i.is_adult = 0 LIMIT 1`, [fileId]);
-  if (!rows.length) return new Response('Not found', {status: 404});
+  if (!rows.length) return semFoto();
   const lp = String(rows[0].lp ?? '');
   const du = rows[0].du == null ? null : String(rows[0].du);
   const resolved = resolve(lp || '.');
@@ -26,5 +31,5 @@ export const GET: APIRoute = async ({ params }) => {
   if (du && /^https:\/\/drive\.google\.com\//.test(du)) {
     return new Response(null, {status: 302, headers: {Location: du, 'Cache-Control': 'private, max-age=3600', Vary: 'Cookie'}});
   }
-  return new Response('Not found', {status: 404});
+  return semFoto();
 };

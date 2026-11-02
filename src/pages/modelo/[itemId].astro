@@ -38,7 +38,7 @@ const nome = (() => {
 <p class="text-sm text-neutral-500"><a href="/">Início</a> / {item.category_name ? <a href={`/categoria/${item.category}`}>{String(item.category_name)}</a> : 'Sem categoria'} / {nome}</p>
 <h1 class="text-3xl font-bold">{nome}</h1>
 <p class="text-2xl font-semibold">{price} créditos</p>
-{tagRows.length ? <p class="text-sm text-neutral-600">Tags: {tagRows.map((t) => String(t.tag)).join(', ')}</p> : null}
+{tagRows.length ? <div class="flex flex-wrap gap-2">{tagRows.map((t) => (<a href={`/busca?tag=${encodeURIComponent(String(t.tag))}`} class="border border-neutral-300 px-2 py-1 text-xs uppercase hover:bg-neutral-100">{String(t.tag)}</a>))}</div> : null}
 {item.description ? <p class="text-neutral-700">{String(item.description)}</p> : null}
 <form method="post" action={`/api/download/${itemId}`}>
 <button type="submit" class="flex h-12 w-full items-center justify-center gap-3 bg-neutral-900 px-4 text-sm font-semibold uppercase text-white transition hover:bg-neutral-600">Baixar — {price} créditos</button>

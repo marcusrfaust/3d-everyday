@@ -8,6 +8,8 @@ import { priceRule } from './plans';
 export interface CatalogItem {id: number;name: string;category: string | null;categoryName: string | null;photoId: number | null;price: number;}
 export const DEV_SAMPLE_LIMIT = 100;
 const BASE = `i.status IN ('reposted','captured') AND i.is_adult = 0`;
+// Vitrine só lista peça baixável: com documento que tenha link no Drive.
+const COM_ARQUIVO = `EXISTS (SELECT 1 FROM files d WHERE d.item_id = i.id AND d.kind = 'document' AND d.drive_url LIKE 'https://drive.google.com/%')`;
 // Títulos do Telegram vêm crus ("alguém tem stl?", "msg-204471"): exibe o nome do
 // arquivo quando o título não diz nada — nunca inventa nome de peça.
 export function displayName(name: string | null, fileName: string | null): string {
@@ -26,7 +28,7 @@ export async function listRecent(limit = 24): Promise<CatalogItem[]> {
       (SELECT f.id FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' AND (f.local_path IS NOT NULL AND f.local_path <> '' OR f.drive_url LIKE 'https://drive.google.com/%') ORDER BY f.id DESC LIMIT 1) AS photoId,
       (SELECT f2.file_name FROM files f2 WHERE f2.item_id = i.id AND f2.kind = 'document' ORDER BY f2.id ASC LIMIT 1) AS fileName,
       (SELECT COALESCE(SUM(f3.size_bytes),0) FROM files f3 WHERE f3.item_id = i.id AND f3.kind = 'document') AS totalBytes
-     FROM items i LEFT JOIN categories c ON c.id = i.category_id WHERE ${BASE} ORDER BY i.created_at DESC LIMIT ?`, [n]);
+     FROM items i LEFT JOIN categories c ON c.id = i.category_id WHERE ${BASE} AND ${COM_ARQUIVO} ORDER BY i.created_at DESC LIMIT ?`, [n]);
   const overs = n ? await priceOverrides(rows.map((r) => Number(r.id))) : new Map<number, number>();
   return rows.map((r) => {
     const id = Number(r.id);
