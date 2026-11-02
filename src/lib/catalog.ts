@@ -11,9 +11,17 @@ const BASE = `i.status IN ('reposted','captured') AND i.is_adult = 0`;
 // Vitrine só lista peça baixável: com documento que tenha link no Drive.
 const COM_ARQUIVO = `EXISTS (SELECT 1 FROM files d WHERE d.item_id = i.id AND d.kind = 'document' AND d.drive_url LIKE 'https://drive.google.com/%')`;
 // Limpa nome de arquivo/título: tira extensões (mesmo duplas, "..zip"), troca
-// separadores por espaço. Nunca inventa nome de peça.
+// separadores por espaço, remove rabo de ingestão (data + sufixo de lote:
+// "...3mf20260908_1_ru") e tokens soltos de formato no meio do nome.
+// Nunca inventa nome de peça.
 function cleanTitle(s: string): string {
-  return s.replace(/(\.(zip|rar|7z|stl|obj|3mf))+$/i, '').replace(/[_+.]+/g, ' ').replace(/\s+/g, ' ').trim();
+  let t = (s ?? '').trim()
+    .replace(/(\.(zip|rar|7z|stl|obj|3mf|step|stp))+$/i, '')
+    .replace(/(3mf|stl|obj|step|stp)?\d{8,}(_\d+)?(_[a-z0-9]{1,5})?$/i, '')
+    .replace(/[_+.]+/g, ' ')
+    .replace(/\b(3mf|stl|obj|step|stp)\b/gi, '')
+    .replace(/\s+/g, ' ').trim();
+  return t;
 }
 export function displayName(name: string | null, fileName: string | null): string {
   const t = (name ?? '').trim();
