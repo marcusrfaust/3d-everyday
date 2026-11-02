@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import ModelCard from '../components/ModelCard.astro';
 import { searchItems, listCategories, listTags } from '../lib/facets';
+import { groupFacets } from '../lib/taggroups';
 export const prerender = false;
 const q = (Astro.url.searchParams.get('q') ?? '').trim();
 const category = (Astro.url.searchParams.get('categoria') ?? '').trim();
@@ -28,9 +29,14 @@ catch (e) { erro = e instanceof Error ? e.message : 'falha na busca'; }
 </div>
 <div>
 <h2 class="text-lg font-bold">Tags</h2>
-<ul class="mt-2 flex flex-col gap-1 text-sm">
-{tags.map((t) => (<li><a href={`/busca?tag=${t.slug}`} class:list={[tag === t.slug && 'font-bold underline']}>{t.name} ({t.count})</a></li>))}
+{groupFacets(tags).map((g) => (
+<div class="mt-2">
+<p class="text-xs font-bold uppercase text-neutral-500">{g.label}</p>
+<ul class="mt-1 flex flex-col gap-1 text-sm">
+{g.tags.map((t) => (<li><a href={`/busca?tag=${t.full}`} class:list={[tag === t.full && 'font-bold underline']}>{t.short} ({t.count})</a></li>))}
 </ul>
+</div>
+))}
 </div>
 </aside>
 <div class="min-w-0 flex-1">

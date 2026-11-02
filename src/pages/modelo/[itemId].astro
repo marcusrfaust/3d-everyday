@@ -4,6 +4,8 @@ import ModelCard from '../../components/ModelCard.astro';
 import { d1query } from '../../lib/d1';
 import { priceForItem } from '../../lib/credits';
 import { searchItems } from '../../lib/facets';
+import { displayName } from '../../lib/catalog';
+import { groupNames } from '../../lib/taggroups';
 export const prerender = false;
 const rawId = Astro.params.itemId;
 const itemId = Number(rawId);
@@ -20,12 +22,7 @@ const tagRows = await d1query(`SELECT tag FROM item_tags WHERE item_id = ? ORDER
 const price = await priceForItem(itemId);
 let rel: Awaited<ReturnType<typeof searchItems>> = [];
 try { rel = (await searchItems({category: item.category == null ? undefined : String(item.category), limit: 5})).filter((r) => r.id !== itemId).slice(0, 4); } catch { rel = []; }
-const nome = (() => {
-  const t = String(item.name ?? '').trim();
-  if (t && !/^msg-\d+$/i.test(t)) return t;
-  const f = String(item.fileName ?? '').replace(/\.(zip|rar|7z|stl|obj|3mf)$/i, '').replace(/[_+.]+/g, ' ').trim();
-  return f || t || `Peça ${itemId}`;
-})();
+const nome = displayName(String(item.name ?? ''), item.fileName == null ? null : String(item.fileName));
 ---
 <Layout title={`${nome} — 3d-Everyday`}>
 <main class="mx-auto mt-8 grid w-full max-w-[1200px] grid-cols-1 gap-8 px-4 lg:mx-0 lg:max-w-none lg:grid-cols-[1fr_32rem] lg:gap-16 xl:mx-auto">
@@ -38,7 +35,12 @@ const nome = (() => {
 <p class="text-sm text-neutral-500"><a href="/">Início</a> / {item.category_name ? <a href={`/categoria/${item.category}`}>{String(item.category_name)}</a> : 'Sem categoria'} / {nome}</p>
 <h1 class="text-3xl font-bold">{nome}</h1>
 <p class="text-2xl font-semibold">{price} créditos</p>
-{tagRows.length ? <div class="flex flex-wrap gap-2">{tagRows.map((t) => (<a href={`/busca?tag=${encodeURIComponent(String(t.tag))}`} class="border border-neutral-300 px-2 py-1 text-xs uppercase hover:bg-neutral-100">{String(t.tag)}</a>))}</div> : null}
+{tagRows.length ? <div class="flex flex-col gap-2">{groupNames(tagRows.map((r) => String(r.tag))).map((g) => (
+<div>
+<p class="text-xs font-bold uppercase text-neutral-500">{g.label}</p>
+<div class="mt-1 flex flex-wrap gap-2">{g.tags.map((t) => (<a href={`/busca?tag=${encodeURIComponent(t.full)}`} class="border border-neutral-300 px-2 py-1 text-xs uppercase hover:bg-neutral-100">{t.short}</a>))}</div>
+</div>
+))}</div> : null}
 {item.description ? <p class="text-neutral-700">{String(item.description)}</p> : null}
 <form method="post" action={`/api/download/${itemId}`}>
 <button type="submit" class="flex h-12 w-full items-center justify-center gap-3 bg-neutral-900 px-4 text-sm font-semibold uppercase text-white transition hover:bg-neutral-600">Baixar — {price} créditos</button>

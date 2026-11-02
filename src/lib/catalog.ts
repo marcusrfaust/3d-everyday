@@ -10,12 +10,15 @@ export const DEV_SAMPLE_LIMIT = 100;
 const BASE = `i.status IN ('reposted','captured') AND i.is_adult = 0`;
 // Vitrine só lista peça baixável: com documento que tenha link no Drive.
 const COM_ARQUIVO = `EXISTS (SELECT 1 FROM files d WHERE d.item_id = i.id AND d.kind = 'document' AND d.drive_url LIKE 'https://drive.google.com/%')`;
-// Títulos do Telegram vêm crus ("alguém tem stl?", "msg-204471"): exibe o nome do
-// arquivo quando o título não diz nada — nunca inventa nome de peça.
+// Limpa nome de arquivo/título: tira extensões (mesmo duplas, "..zip"), troca
+// separadores por espaço. Nunca inventa nome de peça.
+function cleanTitle(s: string): string {
+  return s.replace(/(\.(zip|rar|7z|stl|obj|3mf))+$/i, '').replace(/[_+.]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
 export function displayName(name: string | null, fileName: string | null): string {
   const t = (name ?? '').trim();
-  if (t && !/^msg-\d+$/i.test(t) && !/^algu[ée]m (tem|possui|pode)/i.test(t) && !/^(bom dia|boa (tarde|noite)|@admin|does anyone|alguem)/i.test(t)) return t;
-  const f = (fileName ?? '').trim().replace(/\.(zip|rar|7z|stl|obj|3mf)$/i, '').replace(/[_+.]+/g, ' ').trim();
+  if (t && !/^msg-\d+$/i.test(t) && !/^algu[ée]m (tem|possui|pode)/i.test(t) && !/^(bom dia|boa (tarde|noite)|@admin|does anyone|alguem)/i.test(t)) return cleanTitle(t) || 'Peça sem título';
+  const f = cleanTitle(fileName ?? '');
   if (f) return f;
   // Título é ruído e não há arquivo p/ derivar nome: genérico honesto, nunca o ruído.
   if (!t || /^msg-\d+$/i.test(t) || /^algu[ée]m (tem|possui|pode)/i.test(t) || /^(bom dia|boa (tarde|noite)|@admin|does anyone|alguem)/i.test(t)) return 'Peça sem título';
