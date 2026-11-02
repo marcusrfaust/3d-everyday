@@ -30,9 +30,9 @@ catch (e) { erro = e instanceof Error ? e.message : 'falha na busca'; }
 <div>
 <h2 class="text-lg font-bold">Tags</h2>
 {groupFacets(tags).map((g) => (
-<div class="mt-2">
+<div class="mt-3 border-t border-neutral-100 pt-2">
 <p class="text-xs font-bold uppercase text-neutral-500">{g.label}</p>
-<ul class="mt-1 flex flex-col gap-1 text-sm">
+<ul class="mt-1 flex flex-col gap-1.5 text-sm">
 {g.tags.map((t) => (<li><a href={`/busca?tag=${t.full}`} class:list={[tag === t.full && 'font-bold underline']}>{t.short} ({t.count})</a></li>))}
 </ul>
 </div>
