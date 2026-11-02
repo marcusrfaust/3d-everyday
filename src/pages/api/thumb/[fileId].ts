@@ -12,6 +12,18 @@ const PLACEHOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="600" hei
 function semFoto(): Response {
   return new Response(PLACEHOLDER_SVG, {status: 200, headers: {'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400'}});
 }
+// Drive /file/d/.../view devolve página HTML — <img> quebraria. Converte p/
+// thumbnail direto (público, sem API key); uc/lh3 já são diretos.
+function driveDirect(du: string | null): string | null {
+  if (!du) return null;
+  let m = du.match(/^https:\/\/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`;
+  m = du.match(/^https:\/\/drive\.google\.com\/open\?id=([^&]+)/);
+  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`;
+  if (/^https:\/\/drive\.google\.com\/uc\?/.test(du)) return du;
+  if (/^https:\/\/lh3\.googleusercontent\.com\//.test(du)) return du;
+  return null;
+}
 export const GET: APIRoute = async ({ params }) => {
   const fileId = Number(params.fileId);
   if (!Number.isInteger(fileId)) return new Response('Not found', {status: 404});
@@ -28,8 +40,9 @@ export const GET: APIRoute = async ({ params }) => {
       return new Response(buf, {status: 200, headers: {'Content-Type': MIME[ext] ?? 'application/octet-stream', 'Cache-Control': 'private, max-age=86400'}});
     } catch { /* cai p/ Drive */ }
   }
-  if (du && /^https:\/\/drive\.google\.com\//.test(du)) {
-    return new Response(null, {status: 302, headers: {Location: du, 'Cache-Control': 'private, max-age=3600', Vary: 'Cookie'}});
+  const direct = driveDirect(du);
+  if (direct) {
+    return new Response(null, {status: 302, headers: {Location: direct, 'Cache-Control': 'private, max-age=3600', Vary: 'Cookie'}});
   }
   return semFoto();
 };
