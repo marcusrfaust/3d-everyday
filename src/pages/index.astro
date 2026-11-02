@@ -9,10 +9,15 @@ catch (e) { erro = e instanceof Error ? e.message : 'falha ao carregar catálogo
 <Layout title="3d-Everyday — acervo 3D">
 <h1>Peças recentes</h1>
 {erro ? <p>Catálogo indisponível no momento ({erro}). Tente mais tarde.</p> : <>
-<p>Amostra de desenvolvimento — {items.length} peças (teto {DEV_SAMPLE_LIMIT}). Base atual é temporária; a base nova entra via .env sem mudar código.</p>
-<ul>
+<p>{items.length} peças em destaque. <a href="/busca">Buscar por nome, categoria ou tag</a> (amostra de desenvolvimento, teto {DEV_SAMPLE_LIMIT}).</p>
+<ul class="grid">
 {items.map((it) => (
-<li><a href={`/api/download/${it.id}`}>{it.name}</a>{it.category ? <span> — {it.category}</span> : null}</li>
+<li>
+{it.photoId != null ? <a href={`/modelo/${it.id}`}><img src={`/api/thumb/${it.photoId}`} alt={it.name} loading="lazy"></a> : <a href={`/modelo/${it.id}`}><div style="height:160px;display:flex;align-items:center;justify-content:center;background:#f0f0f0;border-radius:4px">Sem foto — em curadoria</div></a>}
+<div><a href={`/modelo/${it.id}`}>{it.name}</a></div>
+{it.categoryName ? <div>{it.categoryName}</div> : null}
+<div class="preco">{it.price} créditos</div>
+</li>
 ))}
 </ul>
 </>}

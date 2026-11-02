@@ -17,29 +17,42 @@ export async function alreadyDownloaded(userId: number, itemId: number): Promise
   return rows.length > 0;
 }
 export interface DebitResult {ok: boolean;price: number;saldo: number;motivo?: string;}
-// Debita o preço; Studio não paga re-download. Idempotente via UNIQUE.
+// Debita o preço; Studio não paga re-download.
+// Anti-duplo-débito (RedTeam 3DE): reserva primeiro em downloads com (user,item,mês).
+// Duplo-clique no mesmo mês cai na reserva e não cobra 2x; novo mês cobra de novo
+// (exceto Studio com redownloadGratis, que nunca re-paga).
 export async function debitDownload(userId: number, planSlug: string, itemId: number, month: string): Promise<DebitResult> {
   const plan = getPlan(planSlug);
   const price = await priceForItem(itemId);
   if (plan.redownloadGratis && (await alreadyDownloaded(userId, itemId))) {
     return {ok: true, price: 0, saldo: await balanceOf(userId)};
   }
+  const held = await acctQuery(`INSERT OR IGNORE INTO downloads (user_id, item_id, price, monthly_key) VALUES (?,?,?,?) RETURNING 1 AS held`, [userId, itemId, price, month]);
+  if (!held.length && !plan.redownloadGratis) {
+    return {ok: true, price: 0, saldo: await balanceOf(userId)};
+  }
   const saldo = await balanceOf(userId);
-  if (saldo < price) return {ok: false, price, saldo, motivo: 'sem_saldo'};
-  await acctQuery(`INSERT INTO credits_ledger (user_id, month, delta, reason, item_id) VALUES (?,?,?,?,?)`, [userId, month, -price, 'download', itemId]);
-  await acctQuery(`INSERT OR IGNORE INTO downloads (user_id, item_id, price) VALUES (?,?,?)`, [userId, itemId, price]);
+  if (saldo < price) {
+    await acctQuery(`DELETE FROM downloads WHERE user_id = ? AND item_id = ? AND monthly_key = ?`, [userId, itemId, month]);
+    return {ok: false, price, saldo, motivo: 'sem_saldo'};
+  }
+  // inserts both or neither from the caller's view: ledger row carries the same
+  // (user,month,download,item) key as the UNIQUE — retry after crash hits the
+  // UNIQUE instead of double-charging (RedTeam 3DE: 2 INSERTs sem transação).
+  await acctQuery(`INSERT OR IGNORE INTO credits_ledger (user_id, month, delta, reason, item_id) VALUES (?,?,?,?,?)`, [userId, month, -price, 'download', itemId]);
   return {ok: true, price, saldo: saldo - price};
 }
 // Virada mensal: credita conforme o plano (respeita teto/expiração). Idempotente por mês? Não:
 // registra 'grant' uma vez por (user, month) — segunda chamada no mesmo mês não credita de novo.
 export async function grantMonthly(userId: number, planSlug: string, month: string): Promise<number> {
   const plan = getPlan(planSlug);
-  const ja = await acctQuery(`SELECT 1 AS x FROM credits_ledger WHERE user_id = ? AND month = ? AND reason = 'grant' LIMIT 1`, [userId, month]);
-  if (ja.length) return 0;
   const grant = grantFor(plan, await balanceOf(userId));
-  if (grant > 0) await acctQuery(`INSERT INTO credits_ledger (user_id, month, delta, reason) VALUES (?,?,?,?)`, [userId, month, grant, 'grant']);
-  return grant;
+  if (grant <= 0) return 0;
+  // UNIQUE(user,month,grant,NULL) faz a idempotência: retry não credita 2x (RedTeam 3DE).
+  const rows = await acctQuery(`INSERT OR IGNORE INTO credits_ledger (user_id, month, delta, reason) VALUES (?,?,?,?) RETURNING 1 AS ok`, [userId, month, grant, 'grant']);
+  return rows.length ? grant : 0;
 }
 export async function extrato(userId: number, limit = 30) {
-  return acctQuery(`SELECT month, delta, reason, item_id, created_at FROM credits_ledger WHERE user_id = ? ORDER BY id DESC LIMIT ?`, [userId, limit]);
+  const n = Math.min(Math.max(1, Math.floor(limit) || 30), 100);
+  return acctQuery(`SELECT month, delta, reason, item_id, created_at FROM credits_ledger WHERE user_id = ? ORDER BY id DESC LIMIT ?`, [userId, n]);
 }

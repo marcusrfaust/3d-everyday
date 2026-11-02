@@ -10,8 +10,12 @@ function sign(secret: string, uid: number): string {
 export function makeSessionCookieValue(secret: string, uid: number): string {
   return `${uid}.${sign(secret, uid)}`;
 }
-export function sessionUid(cookieValue: string | undefined, secret: string): number | null {
-  if (!cookieValue) return null;
+export function requireSecret(secret: string | undefined): string {
+  if (!secret) throw new Error('SESSION_SECRET não configurado — sessões desabilitadas.');
+  return secret;
+}
+export function sessionUid(cookieValue: string | undefined, secret: string | undefined): number | null {
+  if (!cookieValue || !secret) return null;
   const [uidStr, sig] = cookieValue.split('.');
   const uid = Number(uidStr);
   if (!Number.isInteger(uid) || uid <= 0 || !sig) return null;
@@ -22,12 +26,14 @@ export function sessionUid(cookieValue: string | undefined, secret: string): num
   return timingSafeEqual(a, b) ? uid : null;
 }
 // Senha: scrypt$salt$hash. Simples, sem dependência nova.
+const MAX_PASSWORD_LEN = 256;
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString('hex');
   const h = (await scryptAsync(password, salt, 64)) as Buffer;
   return `scrypt$${salt}$${h.toString('hex')}`;
 }
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  if (password.length > MAX_PASSWORD_LEN) return false;
   const [algo, salt, hash] = stored.split('$');
   if (algo !== 'scrypt' || !salt || !hash) return false;
   const h = (await scryptAsync(password, salt, 64)) as Buffer;

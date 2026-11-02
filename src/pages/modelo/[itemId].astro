@@ -1,0 +1,30 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { d1query } from '../../lib/d1';
+import { priceForItem } from '../../lib/credits';
+export const prerender = false;
+const rawId = Astro.params.itemId;
+const itemId = Number(rawId);
+if (!Number.isInteger(itemId)) return new Response('peça inválida', {status: 400});
+const rows = await d1query(
+  `SELECT i.id AS id, i.name AS name, i.description AS description, c.slug AS category, c.name AS category_name,
+    (SELECT f.id FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' ORDER BY f.id DESC LIMIT 1) AS photoId
+   FROM items i LEFT JOIN categories c ON c.id = i.category_id
+   WHERE i.id = ? AND i.status IN ('reposted','captured') AND i.is_adult = 0 LIMIT 1`, [itemId]);
+if (!rows.length) return new Response('peça não encontrada', {status: 404});
+const item = rows[0];
+const tagRows = await d1query(`SELECT tag FROM item_tags WHERE item_id = ? ORDER BY tag ASC LIMIT 20`, [itemId]);
+const price = await priceForItem(itemId);
+---
+<Layout title={`${String(item.name ?? 'Peça')} — 3d-Everyday`}>
+<p><a href="/">← voltar</a></p>
+<h1>{String(item.name ?? `Peça ${itemId}`)}</h1>
+{item.photoId != null ? <img src={`/api/thumb/${item.photoId}`} alt={String(item.name ?? '')} loading="lazy" style="max-width:100%" /> : <p>Sem foto no momento — imagem em curadoria.</p>}
+<p>{item.category_name != null ? <>Categoria: <a href={`/categoria/${item.category}`}>{String(item.category_name)}</a></> : 'Sem categoria'}</p>
+{tagRows.length ? <p>Tags: {tagRows.map((t) => String(t.tag)).join(', ')}</p> : null}
+{item.description ? <p>{String(item.description)}</p> : null}
+<p><strong>{price} créditos</strong></p>
+<form method="post" action={`/api/download/${itemId}`}>
+<button type="submit">Baixar ({price} créditos)</button>
+</form>
+</Layout>

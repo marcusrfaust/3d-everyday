@@ -1,0 +1,24 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { searchItems } from '../../lib/facets';
+export const prerender = false;
+const slug = Astro.params.slug ?? '';
+let items: Awaited<ReturnType<typeof searchItems>> = [];
+let erro: string | null = null;
+try { items = await searchItems({category: slug}); }
+catch (e) { erro = e instanceof Error ? e.message : 'falha ao carregar categoria'; }
+---
+<Layout title={`Categoria — 3d-Everyday`}>
+<h1>Categoria</h1>
+{erro ? <p>Categoria indisponível ({erro}).</p> : <>
+<p>{items.length} peças.</p>
+<ul>
+{items.map((it) => (
+<li>
+{it.photoId != null ? <a href={`/modelo/${it.id}`}><img src={`/api/thumb/${it.photoId}`} alt="" loading="lazy" width="160"></a> : null}
+<a href={`/modelo/${it.id}`}>{it.name}</a> — {it.price} créditos
+</li>
+))}
+</ul>
+</>}
+</Layout>
