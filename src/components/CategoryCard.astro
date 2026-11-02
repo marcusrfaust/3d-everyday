@@ -1,13 +1,14 @@
 ---
-// Cartão de categoria no padrão vitrine: nome + CTA, com contagem real.
-interface Props {name: string; slug: string; count: number;}
-const {name, slug, count} = Astro.props;
+// Cartão de categoria no padrão vitrine: foto real + nome + CTA, com contagem real.
+interface Props {name: string; slug: string; count: number; photoId?: number | null;}
+const {name, slug, count, photoId} = Astro.props;
 ---
-<div class="relative flex bg-neutral-100 rounded">
+<div class="relative flex overflow-hidden rounded bg-neutral-100">
 <a href={`/categoria/${slug}`} class="w-full">
 <article class="flex flex-col items-start gap-3 p-6">
+{photoId != null ? <img src={`/api/thumb/${photoId}`} alt="" loading="lazy" class="aspect-square w-full self-center rounded object-cover" /> : null}
 <p class="text-3xl font-semibold">{name}</p>
-<p class="text-sm text-neutral-600">{count} peças</p>
+<p class="text-sm text-neutral-600">{count} {count === 1 ? 'peça' : 'peças'}</p>
 <p class="flex h-12 items-center justify-center gap-3 bg-neutral-900 px-4 text-sm font-semibold uppercase text-white transition hover:bg-neutral-600">Ver peças</p>
 </article>
 </a>

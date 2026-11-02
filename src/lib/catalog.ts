@@ -14,13 +14,16 @@ export function displayName(name: string | null, fileName: string | null): strin
   const t = (name ?? '').trim();
   if (t && !/^msg-\d+$/i.test(t) && !/^algu[ée]m (tem|possui|pode)/i.test(t) && !/^(bom dia|boa (tarde|noite)|@admin|does anyone|alguem)/i.test(t)) return t;
   const f = (fileName ?? '').trim().replace(/\.(zip|rar|7z|stl|obj|3mf)$/i, '').replace(/[_+.]+/g, ' ').trim();
-  return f || t || 'Peça sem título';
+  if (f) return f;
+  // Título é ruído e não há arquivo p/ derivar nome: genérico honesto, nunca o ruído.
+  if (!t || /^msg-\d+$/i.test(t) || /^algu[ée]m (tem|possui|pode)/i.test(t) || /^(bom dia|boa (tarde|noite)|@admin|does anyone|alguem)/i.test(t)) return 'Peça sem título';
+  return t;
 }
 export async function listRecent(limit = 24): Promise<CatalogItem[]> {
   const n = Math.min(limit, DEV_SAMPLE_LIMIT);
   const rows = await d1query(
     `SELECT i.id AS id, i.name AS name, c.slug AS category, c.name AS category_name,
-      (SELECT f.id FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' ORDER BY f.id DESC LIMIT 1) AS photoId,
+      (SELECT f.id FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' AND (f.local_path IS NOT NULL AND f.local_path <> '' OR f.drive_url LIKE 'https://drive.google.com/%') ORDER BY f.id DESC LIMIT 1) AS photoId,
       (SELECT f2.file_name FROM files f2 WHERE f2.item_id = i.id AND f2.kind = 'document' ORDER BY f2.id ASC LIMIT 1) AS fileName,
       (SELECT COALESCE(SUM(f3.size_bytes),0) FROM files f3 WHERE f3.item_id = i.id AND f3.kind = 'document') AS totalBytes
      FROM items i LEFT JOIN categories c ON c.id = i.category_id WHERE ${BASE} ORDER BY i.created_at DESC LIMIT ?`, [n]);
