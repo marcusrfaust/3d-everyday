@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro';
+const erro = Astro.url.searchParams.get('error') === '1';
+---
+<Layout title="Entrar — 3d-Everyday">
+<h1>Entrar</h1>
+{erro ? <p>E-mail ou senha inválidos.</p> : null}
+<form method="post" action="/api/login">
+<label>E-mail <input type="email" name="email" required autocomplete="email"></label>
+<label>Senha <input type="password" name="password" required autocomplete="current-password"></label>
+<button type="submit">Entrar</button>
+</form>
+</Layout>

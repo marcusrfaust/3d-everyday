@@ -1,19 +1,18 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { listRecent, countItems } from '../lib/catalog';
+import { listRecent, DEV_SAMPLE_LIMIT } from '../lib/catalog';
 let items: Awaited<ReturnType<typeof listRecent>> = [];
-let total = 0;
 let erro: string | null = null;
-try { [items, total] = await Promise.all([listRecent(24), countItems()]); }
+try { items = await listRecent(24); }
 catch (e) { erro = e instanceof Error ? e.message : 'falha ao carregar catálogo'; }
 ---
 <Layout title="3d-Everyday — acervo 3D">
 <h1>Peças recentes</h1>
 {erro ? <p>Catálogo indisponível no momento ({erro}). Tente mais tarde.</p> : <>
-<p>{total} peças no acervo.</p>
+<p>Amostra de desenvolvimento — {items.length} peças (teto {DEV_SAMPLE_LIMIT}). Base atual é temporária; a base nova entra via .env sem mudar código.</p>
 <ul>
 {items.map((it) => (
-<li><a href={`/modelo/${it.id}`}>{it.name}</a>{it.category ? <span> — {it.category}</span> : null}</li>
+<li><a href={`/api/download/${it.id}`}>{it.name}</a>{it.category ? <span> — {it.category}</span> : null}</li>
 ))}
 </ul>
 </>}

@@ -1,0 +1,25 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { acctQuery } from '../lib/acctdb';
+import { sessionUid } from '../lib/auth';
+import { balanceOf, extrato } from '../lib/credits';
+import { getPlan } from '../lib/plans';
+const secret = import.meta.env.SESSION_SECRET ?? '';
+const uid = sessionUid(Astro.cookies.get('session3de')?.value, secret);
+if (!uid) return Astro.redirect('/login');
+const users = await acctQuery(`SELECT email, plan FROM users WHERE id = ? LIMIT 1`, [uid]);
+if (!users.length) return Astro.redirect('/login');
+const plan = getPlan(String(users[0].plan));
+const [saldo, linhas] = await Promise.all([balanceOf(uid), extrato(uid)]);
+---
+<Layout title="Minha conta — 3d-Everyday">
+<h1>Minha conta</h1>
+<p>{String(users[0].email)} — plano {plan.nome}</p>
+<p>Saldo: <strong>{saldo} créditos</strong> ({plan.mensal}/mês{plan.acumula ? `, acumula até ${plan.teto}` : ', não acumula'})</p>
+<h2>Extrato</h2>
+<ul>
+{linhas.map((l) => (
+<li>{String(l.created_at)} — {Number(l.delta) > 0 ? '+' : ''}{Number(l.delta)} ({String(l.reason)}{l.item_id ? ` peça ${l.item_id}` : ''})</li>
+))}
+</ul>
+</Layout>
