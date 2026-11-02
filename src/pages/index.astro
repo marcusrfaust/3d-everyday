@@ -1,21 +1,51 @@
 ---
-// Vitrine 3DE: hero + carrossel em destaque + grade por categoria. Material real.
+// Vitrine 3DE: hero brasa + destaques + categorias + como funciona. Material real.
 import Layout from '../layouts/Layout.astro';
 import SpotlightCarousel from '../components/SpotlightCarousel.astro';
 import CategorySection from '../components/CategorySection.astro';
+import SectionHeader from '../components/SectionHeader.astro';
 ---
 <Layout title="3d-Everyday — acervo 3D">
-<header class="hero-mesh relative flex h-96 max-h-dvh flex-col justify-end gap-4 py-8 text-white md:h-[512px] md:gap-8">
-<div class="mx-auto w-full max-w-6xl px-4">
-<p class="text-xs font-bold uppercase tracking-widest text-amber-400">Acervo 3D por créditos</p>
-<h1 class="mt-2 max-w-sm font-display text-4xl font-extrabold drop-shadow-md md:text-5xl md:leading-[50px]">Hora de imprimir, Maker.</h1>
-<p class="mt-2 max-w-md text-lg">Milhares de peças curadas, fotos reais e downloads por créditos do seu plano Dash 3D.</p>
-<div class="mt-4"><a href="/busca" class="inline-flex h-12 items-center bg-white px-4 font-bold text-neutral-900 transition hover:bg-neutral-200 md:text-lg">Explorar peças</a></div>
+<header class="hero-mesh relative flex h-96 max-h-dvh flex-col justify-end gap-4 overflow-hidden py-8 text-white md:h-[512px] md:gap-8">
+<div class="hero-grid pointer-events-none absolute inset-0" aria-hidden="true"></div>
+<div class="relative mx-auto w-full max-w-6xl px-4">
+<p class="reveal text-xs font-bold uppercase tracking-widest text-amber-400">Acervo 3D por créditos</p>
+<h1 class="reveal mt-2 max-w-xl font-display text-4xl font-extrabold leading-tight md:text-5xl">Hora de imprimir, Maker.</h1>
+<p class="reveal mt-2 max-w-md text-lg text-stone-300">Peças curadas, fotos reais e downloads por créditos do seu plano Dash 3D.</p>
+<div class="reveal mt-5 flex flex-wrap gap-3">
+<a href="/busca" class="inline-flex h-12 items-center bg-ember-600 px-6 font-bold text-white transition hover:bg-ember-700 md:text-lg">Explorar peças</a>
+<a href="#como-funciona" class="inline-flex h-12 items-center border border-white/30 px-6 font-bold text-white transition hover:bg-white/10 md:text-lg">Como funcionam os créditos</a>
+</div>
+<dl class="reveal mt-8 flex flex-wrap gap-x-8 gap-y-3 border-t border-white/10 pt-5 text-sm">
+<div><dt class="text-stone-400">Preço por peça</dt><dd class="font-mono font-bold text-white">30–600 créditos</dd></div>
+<div><dt class="text-stone-400">Planos</dt><dd class="font-mono font-bold text-white">3 com recarga mensal</dd></div>
+<div><dt class="text-stone-400">Formatos</dt><dd class="font-mono font-bold text-white">STL + 3MF</dd></div>
+</dl>
 </div>
 </header>
-<main class="mx-auto mt-16 flex max-w-6xl flex-col gap-y-16 px-4">
+<main class="mx-auto mt-16 flex max-w-6xl flex-col gap-y-20 px-4 md:mt-20">
 <SpotlightCarousel />
 <CategorySection />
-<p class="text-sm text-neutral-500">Amostra de desenvolvimento. A base atual é temporária; a base nova entra sem mudar código.</p>
+<section id="como-funciona" aria-label="Como funcionam os créditos" class="scroll-mt-24">
+<SectionHeader eyebrow="Simples assim" title="Como funcionam os créditos" />
+<div class="mt-5 grid gap-4 md:grid-cols-3">
+<div class="rounded-xl border border-stone-200 bg-white p-5">
+<p class="font-mono text-sm font-bold text-ember-700">01</p>
+<h3 class="mt-1 font-display text-lg font-extrabold">Escolha a peça</h3>
+<p class="mt-1 text-sm text-stone-600">Busque por nome, categoria ou tags como personagem, estilo e formato.</p>
+</div>
+<div class="rounded-xl border border-stone-200 bg-white p-5">
+<p class="font-mono text-sm font-bold text-ember-700">02</p>
+<h3 class="mt-1 font-display text-lg font-extrabold">Baixe com créditos</h3>
+<p class="mt-1 text-sm text-stone-600">Cada peça custa de 30 a 600 créditos conforme o tamanho. O débito acontece na hora do download.</p>
+</div>
+<div class="rounded-xl border border-stone-200 bg-white p-5">
+<p class="font-mono text-sm font-bold text-ember-700">03</p>
+<h3 class="mt-1 font-display text-lg font-extrabold">Imprima</h3>
+<p class="mt-1 text-sm text-stone-600">Arquivo STL ou 3MF pronto para o fatiador. Sem saldo, fale com o suporte para fazer upgrade de plano.</p>
+</div>
+</div>
+</section>
+<p class="text-sm text-stone-500">Amostra de desenvolvimento. A base atual é temporária; a base nova entra sem mudar código.</p>
 </main>
 </Layout>

@@ -12,17 +12,18 @@ catch (e) { erro = e instanceof Error ? e.message : 'falha ao carregar categoria
 const atual = cats.find((c) => c.slug === slug);
 ---
 <Layout title={`${atual?.name ?? 'Categoria'} — 3d-Everyday`}>
-<main class="mx-auto mt-8 flex w-full max-w-6xl flex-wrap gap-4 px-4">
-<aside class="flex w-64 flex-col gap-4 py-4">
-<h2 class="text-lg font-bold">Categorias</h2>
-<ul class="flex flex-col gap-1 text-sm">
-{cats.map((c) => (<li><a href={`/categoria/${c.slug}`} class:list={[c.slug === slug && 'font-bold underline']}>{c.name} ({c.count})</a></li>))}
+<main class="mx-auto mt-8 flex w-full max-w-6xl flex-wrap gap-5 px-4">
+<aside class="flex w-64 flex-col gap-2 rounded-xl border border-stone-200 bg-white p-4">
+<h2 class="font-display text-base font-extrabold">Categorias</h2>
+<ul class="mt-1 flex flex-col gap-1.5 text-sm">
+{cats.map((c) => (<li><a href={`/categoria/${c.slug}`} class:list={[c.slug === slug && 'font-bold text-ember-700 underline', 'hover:text-ember-700 hover:underline']}>{c.name} <span class="font-mono text-xs text-stone-500">({c.count})</span></a></li>))}
 </ul>
 </aside>
 <div class="min-w-0 flex-1">
-<h1 class="text-2xl font-bold">{atual?.name ?? 'Categoria'}</h1>
-{erro ? <p>Categoria indisponível ({erro}).</p> : <>
-<p class="mt-1 text-sm text-neutral-600">{items.length} peças.</p>
+<p class="text-xs font-bold uppercase tracking-widest text-ember-700">Categoria</p>
+<h1 class="mt-1 font-display text-2xl font-extrabold tracking-tight md:text-3xl">{atual?.name ?? 'Categoria'}</h1>
+{erro ? <p class="mt-2 text-sm text-red-700">Categoria indisponível ({erro}).</p> : <>
+<p class="mt-1 font-mono text-sm text-stone-500">{items.length} peças.</p>
 <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 {items.map((it, idx) => (<ModelCard item={it} eager={idx === 0} />))}
 </div>

@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import ModelCard from '../../components/ModelCard.astro';
+import SectionHeader from '../../components/SectionHeader.astro';
 import { d1query } from '../../lib/d1';
 import { priceForItem } from '../../lib/credits';
 import { searchItems } from '../../lib/facets';
@@ -27,26 +28,26 @@ const nome = displayName(String(item.name ?? ''), item.fileName == null ? null :
 <Layout title={`${nome} — 3d-Everyday`}>
 <main class="mx-auto mt-8 grid w-full max-w-[1200px] grid-cols-1 gap-8 px-4 lg:mx-0 lg:max-w-none lg:grid-cols-[1fr_32rem] lg:gap-16 xl:mx-auto">
 <div>
-<div class="relative flex aspect-square items-center justify-center overflow-hidden rounded bg-neutral-100">
-{item.photoId != null ? <img src={`/api/thumb/${item.photoId}`} alt={nome} class="h-full w-full object-cover" /> : <span class="px-4 text-center text-sm text-neutral-500">Sem foto no momento — imagem em curadoria.</span>}
+<div class="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-stone-200 bg-stone-100">
+{item.photoId != null ? <img src={`/api/thumb/${item.photoId}`} alt={nome} class="h-full w-full object-cover" /> : <span class="px-4 text-center text-sm text-stone-500">Sem foto no momento — imagem em curadoria.</span>}
 </div>
 </div>
 <div class="flex flex-col gap-4">
-<p class="text-sm text-neutral-500"><a href="/">Início</a> / {item.category_name ? <a href={`/categoria/${item.category}`}>{String(item.category_name)}</a> : 'Sem categoria'} / {nome}</p>
-<h1 class="text-3xl font-bold">{nome}</h1>
-<p class="text-2xl font-semibold">{price} créditos</p>
-{tagRows.length ? <div class="flex flex-col gap-2">{groupNames(tagRows.map((r) => String(r.tag))).map((g) => (
+<p class="text-sm text-stone-500"><a href="/" class="hover:text-ember-700 hover:underline">Início</a> / {item.category_name ? <a href={`/categoria/${item.category}`} class="hover:text-ember-700 hover:underline">{String(item.category_name)}</a> : 'Sem categoria'} / {nome}</p>
+<h1 class="font-display text-3xl font-extrabold tracking-tight">{nome}</h1>
+<p class="font-mono text-2xl font-bold text-ember-800">{price} créditos</p>
+{tagRows.length ? <div class="flex flex-col gap-2 rounded-xl border border-stone-200 bg-white p-4">{groupNames(tagRows.map((r) => String(r.tag))).map((g) => (
 <div>
-<p class="text-xs font-bold uppercase text-neutral-500">{g.label}</p>
-<div class="mt-1 flex flex-wrap gap-2">{g.tags.map((t) => (<a href={`/busca?tag=${encodeURIComponent(t.full)}`} class="border border-neutral-300 px-2 py-1 text-xs uppercase hover:bg-neutral-100">{t.short}</a>))}</div>
+<p class="text-xs font-bold uppercase tracking-widest text-stone-500">{g.label}</p>
+<div class="mt-1 flex flex-wrap gap-2">{g.tags.map((t) => (<a href={`/busca?tag=${encodeURIComponent(t.full)}`} class="rounded-md border border-stone-200 px-2 py-1 text-xs font-semibold uppercase hover:border-ember-700 hover:text-ember-700">{t.short}</a>))}</div>
 </div>
 ))}</div> : null}
-{item.description ? <p class="text-neutral-700">{String(item.description)}</p> : null}
+{item.description ? <p class="text-stone-700">{String(item.description)}</p> : null}
 <form method="post" action={`/api/download/${itemId}`}>
-<button type="submit" class="flex h-12 w-full items-center justify-center gap-3 bg-neutral-900 px-4 text-sm font-semibold uppercase text-white transition hover:bg-neutral-600">Baixar — {price} créditos</button>
+<button type="submit" class="flex h-12 w-full cursor-pointer items-center justify-center gap-3 bg-ember-700 px-4 text-sm font-semibold uppercase text-white transition hover:bg-ember-800">Baixar — {price} créditos</button>
 </form>
-<p class="text-sm text-neutral-500">Download debitado da carteira do seu plano. Sem créditos suficientes, faça upgrade.</p>
+<p class="text-sm text-stone-500">Download debitado da carteira do seu plano. Sem créditos suficientes, fale com o suporte para fazer upgrade.</p>
 </div>
 </main>
-{rel.length ? <section class="mx-auto mt-16 w-full max-w-6xl px-4"><h2 class="text-2xl font-bold">Você também pode gostar</h2><div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{rel.map((r) => (<ModelCard item={r} />))}</div></section> : null}
+{rel.length ? <section class="mx-auto mt-16 w-full max-w-6xl px-4" aria-label="Relacionadas"><SectionHeader eyebrow="Continue explorando" title="Você também pode gostar" /><div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{rel.map((r) => (<ModelCard item={r} />))}</div></section> : null}
 </Layout>

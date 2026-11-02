@@ -1,15 +1,20 @@
 ---
-// Cartão de categoria no padrão vitrine: foto real + nome + CTA, com contagem real.
+// Cartão de categoria: capa real + nome display + contagem mono + link ember.
 interface Props {name: string; slug: string; count: number; photoId?: number | null;}
 const {name, slug, count, photoId} = Astro.props;
+const inicial = (name ?? '?').trim().slice(0, 1).toUpperCase();
 ---
-<div class="relative flex overflow-hidden rounded bg-neutral-100">
+<div class="card-lift relative flex overflow-hidden rounded-xl border border-stone-200 bg-white">
 <a href={`/categoria/${slug}`} class="w-full">
-<article class="flex flex-col items-start gap-3 p-6">
-{photoId != null ? <img src={`/api/thumb/${photoId}`} alt="" loading="lazy" class="aspect-square w-full self-center rounded object-cover" /> : null}
-<p class="text-3xl font-semibold">{name}</p>
-<p class="text-sm text-neutral-600">{count} {count === 1 ? 'peça' : 'peças'}</p>
-<p class="flex h-12 items-center justify-center gap-3 bg-neutral-900 px-4 text-sm font-semibold uppercase text-white transition hover:bg-neutral-600">Ver peças</p>
+<article class="flex flex-col items-start gap-3 p-4">
+{photoId != null
+? <img src={`/api/thumb/${photoId}`} alt="" loading="lazy" class="aspect-[16/10] w-full rounded-lg object-cover" />
+: <div class="flex aspect-[16/10] w-full items-center justify-center rounded-lg bg-ember-700/10" aria-hidden="true"><span class="font-display text-5xl font-extrabold text-ember-700">{inicial}</span></div>}
+<div class="flex w-full flex-wrap items-baseline justify-between gap-2">
+<p class="font-display text-xl font-extrabold tracking-tight text-stone-900">{name}</p>
+<p class="font-mono text-xs text-stone-500">{count} {count === 1 ? 'peça' : 'peças'}</p>
+</div>
+<p class="text-sm font-semibold text-ember-700">Ver peças →</p>
 </article>
 </a>
 </div>

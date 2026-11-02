@@ -1,5 +1,5 @@
 ---
-// Casco definitivo 3DE: header + footer no padrão vitrine (hero e seções nas páginas).
+/* Casco definitivo 3DE: header sticky + footer completo, mesma linguagem da vitrine. */
 interface Props {title?: string;}
 const {title = '3d-Everyday'} = Astro.props;
 import '../styles.css';
@@ -13,33 +13,51 @@ let navCats: Awaited<ReturnType<typeof listCategories>> = [];
 try { navCats = (await listCategories()).slice(0, 10); } catch { navCats = []; }
 ---
 <!DOCTYPE html>
-<html lang="pt-BR" class="bg-white text-neutral-900">
+<html lang="pt-BR" class="bg-stone-50 text-stone-900">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="theme-color" content="#0c0a09"><title>{title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="min-h-screen">
-<header class="sticky top-0 z-50 border-b border-neutral-200 bg-white">
+<header class="sticky top-0 z-50 border-b border-stone-200 bg-white">
 <nav aria-label="Navegação do site" class="mx-auto flex min-h-20 max-w-6xl flex-row flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2">
-<div class="flex-1">
-<a href="/" class="block w-fit p-2 text-lg font-extrabold tracking-tight">3d-Everyday</a>
-</div>
-<form action="/busca" method="get" class="hidden min-w-0 flex-1 sm:flex">
-<input type="search" name="q" placeholder="Buscar peças..." aria-label="Buscar peças" class="w-full border border-neutral-300 px-3 py-2">
+<a href="/" class="flex items-center gap-2" aria-label="3d-Everyday — início">
+<span class="h-6 w-6 rounded-md bg-ember-700" aria-hidden="true"></span>
+<span class="font-display text-lg font-extrabold tracking-tight">3d-Everyday</span>
+</a>
+<form action="/busca" method="get" class="hidden min-w-0 flex-1 sm:flex" role="search">
+<input type="search" name="q" placeholder="Buscar peças..." aria-label="Buscar peças" class="h-10 w-full rounded-full border border-stone-200 bg-stone-50 px-4 text-sm">
 </form>
 <div class="flex flex-1 items-center justify-end gap-2">
-{uid && saldo !== null ? <a href="/conta" class="bg-ember-700 px-3 py-2 font-mono text-sm font-bold uppercase text-white transition hover:bg-ember-800" title="Seu saldo — ver extrato">{saldo} créditos</a> : null}
-{uid ? <><a href="/conta" class="px-3 py-2 text-sm font-semibold uppercase hover:text-neutral-600">Minha conta</a><form method="post" action="/api/logout" style="display:inline"><button type="submit" class="px-3 py-2 text-sm font-semibold uppercase hover:text-neutral-600">Sair</button></form></> : <a href="/login" class="px-3 py-2 text-sm font-semibold uppercase hover:text-neutral-600">Entrar</a>}
+{uid && saldo !== null ? <a href="/conta" class="rounded-full bg-ember-700 px-4 py-2 font-mono text-sm font-bold text-white transition hover:bg-ember-800" title="Seu saldo — ver extrato">{saldo} créditos</a> : null}
+{uid ? <><a href="/conta" class="px-3 py-2 text-sm font-semibold uppercase hover:text-stone-600">Minha conta</a><form method="post" action="/api/logout" style="display:inline"><button type="submit" class="cursor-pointer px-3 py-2 text-sm font-semibold uppercase hover:text-stone-600">Sair</button></form></> : <a href="/login" class="px-3 py-2 text-sm font-semibold uppercase hover:text-stone-600">Entrar</a>}
 </div>
-{navCats.length ? <div class="hidden w-full overflow-x-auto border-t border-neutral-100 md:block"><ul class="flex w-max gap-4 py-1 text-sm">{navCats.map((c) => (<li><a href={`/categoria/${c.slug}`} class="whitespace-nowrap opacity-70 hover:opacity-100 hover:underline">{c.name}</a></li>))}</ul></div> : null}
+{navCats.length ? <div class="hidden w-full overflow-x-auto border-t border-stone-100 md:block"><ul class="flex w-max gap-4 py-1.5 text-sm">{navCats.map((c) => (<li><a href={`/categoria/${c.slug}`} class="whitespace-nowrap text-stone-600 hover:text-ember-700 hover:underline">{c.name}</a></li>))}</ul></div> : null}
 </nav>
 </header>
 <slot />
-<footer class="mt-24 border-t border-neutral-200">
-<div class="mx-auto max-w-6xl px-4 py-8 text-sm text-neutral-600">
-<p class="font-semibold text-neutral-900">3d-Everyday — acervo 3D por créditos do plano Dash 3D.</p>
-<p>Catálogo em curadoria. Preços em créditos; downloads debitados da carteira do plano.</p>
+<footer class="mt-24 border-t border-stone-200 bg-white">
+<div class="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm sm:grid-cols-3">
+<div>
+<p class="flex items-center gap-2 font-display text-base font-extrabold tracking-tight"><span class="h-5 w-5 rounded-md bg-ember-700" aria-hidden="true"></span>3d-Everyday</p>
+<p class="mt-2 text-stone-600">Acervo 3D por créditos do plano Dash 3D. Catálogo em curadoria.</p>
 </div>
+<div>
+<p class="text-xs font-bold uppercase tracking-widest text-stone-500">Explorar</p>
+<ul class="mt-2 flex flex-col gap-1.5">
+<li><a href="/busca" class="hover:text-ember-700 hover:underline">Buscar peças</a></li>
+{navCats.slice(0, 5).map((c) => (<li><a href={`/categoria/${c.slug}`} class="hover:text-ember-700 hover:underline">{c.name}</a></li>))}
+</ul>
+</div>
+<div>
+<p class="text-xs font-bold uppercase tracking-widest text-stone-500">Conta</p>
+<ul class="mt-2 flex flex-col gap-1.5">
+{uid ? <><li><a href="/conta" class="hover:text-ember-700 hover:underline">Minha conta e extrato</a></li></> : <li><a href="/login" class="hover:text-ember-700 hover:underline">Entrar</a></li>}
+<li><a href="/#como-funciona" class="hover:text-ember-700 hover:underline">Como funcionam os créditos</a></li>
+</ul>
+</div>
+</div>
+<div class="border-t border-stone-100"><p class="mx-auto max-w-6xl px-4 py-4 text-xs text-stone-500">3d-Everyday — downloads debitados da carteira do seu plano.</p></div>
 </footer>
 </body>
 </html>
