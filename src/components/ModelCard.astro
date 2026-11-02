@@ -5,7 +5,7 @@ import type { CatalogItem } from '../lib/catalog';
 interface Props {item: CatalogItem; eager?: boolean;}
 const {item, eager} = Astro.props;
 ---
-<a href={`/modelo/${item.id}`} class="group relative block w-full focus-visible:ring-0" aria-label={`${item.name} por ${item.price} créditos`}>
+<a href={`/modelo/${item.id}`} class="card-lift group relative block w-full focus-visible:ring-0" aria-label={`${item.name} por ${item.price} créditos`}>
 <article>
 <div class="relative flex aspect-[5/6] items-center justify-center overflow-hidden rounded bg-neutral-100">
 {item.photoId != null
@@ -13,8 +13,8 @@ const {item, eager} = Astro.props;
 : <span class="px-4 text-center text-sm text-neutral-500">Sem foto — em curadoria</span>}
 </div>
 <div class="flex flex-col gap-2 p-2 font-medium">
-<h3 class="leading-tight text-neutral-900">{item.name}</h3>
-<p class="text-lg text-neutral-600">{item.price} créditos</p>
+<h3 class="font-display leading-tight text-neutral-900">{item.name}</h3>
+<p><span class="inline-block bg-neutral-900 px-2 py-0.5 font-mono text-sm font-bold text-white">{item.price} créditos</span></p>
 </div>
 </article>
 <div class="pointer-events-none absolute inset-0 ring-inset ring-neutral-900 group-focus-visible:ring-2"></div>

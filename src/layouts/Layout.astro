@@ -14,7 +14,10 @@ try { navCats = (await listCategories()).slice(0, 10); } catch { navCats = []; }
 ---
 <!DOCTYPE html>
 <html lang="pt-BR" class="bg-white text-neutral-900">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>{title}</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="theme-color" content="#0c0a09"><title>{title}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
 <body class="min-h-screen">
 <header class="sticky top-0 z-50 border-b border-neutral-200 bg-white">
 <nav aria-label="Navegação do site" class="mx-auto flex min-h-20 max-w-6xl flex-row flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2">
@@ -25,7 +28,7 @@ try { navCats = (await listCategories()).slice(0, 10); } catch { navCats = []; }
 <input type="search" name="q" placeholder="Buscar peças..." aria-label="Buscar peças" class="w-full border border-neutral-300 px-3 py-2">
 </form>
 <div class="flex flex-1 items-center justify-end gap-2">
-{uid && saldo !== null ? <a href="/conta" class="border border-neutral-900 px-3 py-2 text-sm font-bold uppercase" title="Seu saldo — ver extrato">{saldo} créditos</a> : null}
+{uid && saldo !== null ? <a href="/conta" class="bg-ember-700 px-3 py-2 font-mono text-sm font-bold uppercase text-white transition hover:bg-ember-800" title="Seu saldo — ver extrato">{saldo} créditos</a> : null}
 {uid ? <><a href="/conta" class="px-3 py-2 text-sm font-semibold uppercase hover:text-neutral-600">Minha conta</a><form method="post" action="/api/logout" style="display:inline"><button type="submit" class="px-3 py-2 text-sm font-semibold uppercase hover:text-neutral-600">Sair</button></form></> : <a href="/login" class="px-3 py-2 text-sm font-semibold uppercase hover:text-neutral-600">Entrar</a>}
 </div>
 {navCats.length ? <div class="hidden w-full overflow-x-auto border-t border-neutral-100 md:block"><ul class="flex w-max gap-4 py-1 text-sm">{navCats.map((c) => (<li><a href={`/categoria/${c.slug}`} class="whitespace-nowrap opacity-70 hover:opacity-100 hover:underline">{c.name}</a></li>))}</ul></div> : null}
