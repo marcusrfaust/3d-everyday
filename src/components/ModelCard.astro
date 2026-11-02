@@ -1,0 +1,21 @@
+---
+// Cartão de peça no padrão vitrine: imagem em card (aspecto alto) + nome + preço.
+// Material 100% do catálogo real; sem framework reativo.
+import type { CatalogItem } from '../lib/catalog';
+interface Props {item: CatalogItem; eager?: boolean;}
+const {item, eager} = Astro.props;
+---
+<a href={`/modelo/${item.id}`} class="group relative block w-full focus-visible:ring-0" aria-label={`${item.name} por ${item.price} créditos`}>
+<article>
+<div class="relative flex aspect-[5/6] items-center justify-center overflow-hidden rounded bg-neutral-100">
+{item.photoId != null
+? <img src={`/api/thumb/${item.photoId}`} alt={item.name} loading={eager ? 'eager' : 'lazy'} draggable="false" class="h-full w-full object-cover" />
+: <span class="px-4 text-center text-sm text-neutral-500">Sem foto — em curadoria</span>}
+</div>
+<div class="flex flex-col gap-2 p-2 font-medium">
+<h3 class="leading-tight text-neutral-900">{item.name}</h3>
+<p class="text-lg text-neutral-600">{item.price} créditos</p>
+</div>
+</article>
+<div class="pointer-events-none absolute inset-0 ring-inset ring-neutral-900 group-focus-visible:ring-2"></div>
+</a>

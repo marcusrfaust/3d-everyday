@@ -1,24 +1,20 @@
 ---
+// Vitrine 3DE: hero + carrossel em destaque + grade por categoria. Material real.
 import Layout from '../layouts/Layout.astro';
-import { listRecent, DEV_SAMPLE_LIMIT } from '../lib/catalog';
-let items: Awaited<ReturnType<typeof listRecent>> = [];
-let erro: string | null = null;
-try { items = await listRecent(24); }
-catch (e) { erro = e instanceof Error ? e.message : 'falha ao carregar catálogo'; }
+import SpotlightCarousel from '../components/SpotlightCarousel.astro';
+import CategorySection from '../components/CategorySection.astro';
 ---
 <Layout title="3d-Everyday — acervo 3D">
-<h1>Peças recentes</h1>
-{erro ? <p>Catálogo indisponível no momento ({erro}). Tente mais tarde.</p> : <>
-<p>{items.length} peças em destaque. <a href="/busca">Buscar por nome, categoria ou tag</a> (amostra de desenvolvimento, teto {DEV_SAMPLE_LIMIT}).</p>
-<ul class="grid">
-{items.map((it) => (
-<li>
-{it.photoId != null ? <a href={`/modelo/${it.id}`}><img src={`/api/thumb/${it.photoId}`} alt={it.name} loading="lazy"></a> : <a href={`/modelo/${it.id}`}><div style="height:160px;display:flex;align-items:center;justify-content:center;background:#f0f0f0;border-radius:4px">Sem foto — em curadoria</div></a>}
-<div><a href={`/modelo/${it.id}`}>{it.name}</a></div>
-{it.categoryName ? <div>{it.categoryName}</div> : null}
-<div class="preco">{it.price} créditos</div>
-</li>
-))}
-</ul>
-</>}
+<header class="relative flex h-96 max-h-dvh flex-col justify-end gap-4 bg-black py-8 text-white md:h-[512px] md:gap-8">
+<div class="mx-auto w-full max-w-6xl px-4">
+<h1 class="max-w-sm text-4xl font-extrabold drop-shadow-md md:text-5xl md:leading-[50px]">Hora de imprimir, Maker.</h1>
+<p class="mt-2 max-w-md text-lg">Milhares de peças curadas, fotos reais e downloads por créditos do seu plano Dash 3D.</p>
+<div class="mt-4"><a href="/busca" class="inline-flex h-12 items-center bg-white px-4 font-bold text-neutral-900 transition hover:bg-neutral-200 md:text-lg">Explorar peças</a></div>
+</div>
+</header>
+<main class="mx-auto mt-16 flex max-w-6xl flex-col gap-y-16 px-4">
+<SpotlightCarousel />
+<CategorySection />
+<p class="text-sm text-neutral-500">Amostra de desenvolvimento. A base atual é temporária; a base nova entra sem mudar código.</p>
+</main>
 </Layout>

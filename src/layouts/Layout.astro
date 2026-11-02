@@ -1,30 +1,30 @@
 ---
-// Casco definitivo 3DE — nav + conta + footer. Sem framework reativo na fase atual.
+// Casco definitivo 3DE: header + footer no padrão vitrine (hero e seções nas páginas).
 interface Props {title?: string;}
 const {title = '3d-Everyday'} = Astro.props;
-const uid = Astro.cookies.get('session3de')?.value;
-const logado = !!uid;
+const logado = !!Astro.cookies.get('session3de')?.value;
 ---
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>{title}</title>
-<style>
-:root{color-scheme:light dark}
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0 auto;max-width:1080px;padding:0 1rem;line-height:1.45}
-header nav{display:flex;gap:1rem;align-items:center;padding:1rem 0;border-bottom:1px solid #ccc}
-header nav a:first-child{font-weight:700;font-size:1.2rem}
-header nav .sp{flex:1}
-main{padding:1rem 0}
-.grid{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
-.grid li{border:1px solid #ddd;border-radius:8px;padding:.5rem}
-.grid img{width:100%;height:160px;object-fit:cover;border-radius:4px;background:#f0f0f0}
-.preco{font-weight:700}
-footer{border-top:1px solid #ccc;margin-top:2rem;padding:1rem 0;color:#666;font-size:.9rem}
-</style>
-</head>
-<body>
-<header><nav><a href="/">3d-Everyday</a><a href="/busca">Buscar</a><span class="sp"></span>{logado ? <><a href="/conta">Minha conta</a><form method="post" action="/api/logout" style="display:inline"><button type="submit">Sair</button></form></> : <a href="/login">Entrar</a>}</nav></header>
-<main><slot /></main>
-<footer><p>3d-Everyday — acervo 3D por créditos do plano Dash 3D.</p></footer>
+<html lang="pt-BR" class="bg-white text-neutral-900">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>{title}</title></head>
+<body class="min-h-screen">
+<header class="border-b border-neutral-200 bg-white">
+<nav aria-label="Navegação do site" class="mx-auto flex min-h-20 max-w-6xl flex-row items-center gap-4 px-4 py-2">
+<div class="flex-1">
+<a href="/" class="block w-fit p-2 text-lg font-extrabold tracking-tight">3d-Everyday</a>
+</div>
+<div class="flex flex-1 items-center justify-end gap-2">
+<a href="/busca" class="px-3 py-2 text-sm font-semibold uppercase hover:text-neutral-600">Buscar</a>
+{logado ? <><a href="/conta" class="px-3 py-2 text-sm font-semibold uppercase hover:text-neutral-600">Minha conta</a><form method="post" action="/api/logout" style="display:inline"><button type="submit" class="px-3 py-2 text-sm font-semibold uppercase hover:text-neutral-600">Sair</button></form></> : <a href="/login" class="px-3 py-2 text-sm font-semibold uppercase hover:text-neutral-600">Entrar</a>}
+</div>
+</nav>
+</header>
+<slot />
+<footer class="mt-24 border-t border-neutral-200">
+<div class="mx-auto max-w-6xl px-4 py-8 text-sm text-neutral-600">
+<p class="font-semibold text-neutral-900">3d-Everyday — acervo 3D por créditos do plano Dash 3D.</p>
+<p>Catálogo em curadoria. Preços em créditos; downloads debitados da carteira do plano.</p>
+</div>
+</footer>
 </body>
 </html>

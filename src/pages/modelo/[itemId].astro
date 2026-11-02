@@ -1,30 +1,50 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import ModelCard from '../../components/ModelCard.astro';
 import { d1query } from '../../lib/d1';
 import { priceForItem } from '../../lib/credits';
+import { searchItems } from '../../lib/facets';
 export const prerender = false;
 const rawId = Astro.params.itemId;
 const itemId = Number(rawId);
 if (!Number.isInteger(itemId)) return new Response('peça inválida', {status: 400});
 const rows = await d1query(
   `SELECT i.id AS id, i.name AS name, i.description AS description, c.slug AS category, c.name AS category_name,
-    (SELECT f.id FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' ORDER BY f.id DESC LIMIT 1) AS photoId
+    (SELECT f.id FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' ORDER BY f.id DESC LIMIT 1) AS photoId,
+    (SELECT f2.file_name FROM files f2 WHERE f2.item_id = i.id AND f2.kind = 'document' ORDER BY f2.id ASC LIMIT 1) AS fileName
    FROM items i LEFT JOIN categories c ON c.id = i.category_id
    WHERE i.id = ? AND i.status IN ('reposted','captured') AND i.is_adult = 0 LIMIT 1`, [itemId]);
 if (!rows.length) return new Response('peça não encontrada', {status: 404});
 const item = rows[0];
 const tagRows = await d1query(`SELECT tag FROM item_tags WHERE item_id = ? ORDER BY tag ASC LIMIT 20`, [itemId]);
 const price = await priceForItem(itemId);
+let rel: Awaited<ReturnType<typeof searchItems>> = [];
+try { rel = (await searchItems({category: item.category == null ? undefined : String(item.category), limit: 5})).filter((r) => r.id !== itemId).slice(0, 4); } catch { rel = []; }
+const nome = (() => {
+  const t = String(item.name ?? '').trim();
+  if (t && !/^msg-\d+$/i.test(t)) return t;
+  const f = String(item.fileName ?? '').replace(/\.(zip|rar|7z|stl|obj|3mf)$/i, '').replace(/[_+.]+/g, ' ').trim();
+  return f || t || `Peça ${itemId}`;
+})();
 ---
-<Layout title={`${String(item.name ?? 'Peça')} — 3d-Everyday`}>
-<p><a href="/">← voltar</a></p>
-<h1>{String(item.name ?? `Peça ${itemId}`)}</h1>
-{item.photoId != null ? <img src={`/api/thumb/${item.photoId}`} alt={String(item.name ?? '')} loading="lazy" style="max-width:100%" /> : <p>Sem foto no momento — imagem em curadoria.</p>}
-<p>{item.category_name != null ? <>Categoria: <a href={`/categoria/${item.category}`}>{String(item.category_name)}</a></> : 'Sem categoria'}</p>
-{tagRows.length ? <p>Tags: {tagRows.map((t) => String(t.tag)).join(', ')}</p> : null}
-{item.description ? <p>{String(item.description)}</p> : null}
-<p><strong>{price} créditos</strong></p>
+<Layout title={`${nome} — 3d-Everyday`}>
+<main class="mx-auto mt-8 grid w-full max-w-[1200px] grid-cols-1 gap-8 px-4 lg:mx-0 lg:max-w-none lg:grid-cols-[1fr_32rem] lg:gap-16 xl:mx-auto">
+<div>
+<div class="relative flex aspect-square items-center justify-center overflow-hidden rounded bg-neutral-100">
+{item.photoId != null ? <img src={`/api/thumb/${item.photoId}`} alt={nome} class="h-full w-full object-cover" /> : <span class="px-4 text-center text-sm text-neutral-500">Sem foto no momento — imagem em curadoria.</span>}
+</div>
+</div>
+<div class="flex flex-col gap-4">
+<p class="text-sm text-neutral-500"><a href="/">Início</a> / {item.category_name ? <a href={`/categoria/${item.category}`}>{String(item.category_name)}</a> : 'Sem categoria'} / {nome}</p>
+<h1 class="text-3xl font-bold">{nome}</h1>
+<p class="text-2xl font-semibold">{price} créditos</p>
+{tagRows.length ? <p class="text-sm text-neutral-600">Tags: {tagRows.map((t) => String(t.tag)).join(', ')}</p> : null}
+{item.description ? <p class="text-neutral-700">{String(item.description)}</p> : null}
 <form method="post" action={`/api/download/${itemId}`}>
-<button type="submit">Baixar ({price} créditos)</button>
+<button type="submit" class="flex h-12 w-full items-center justify-center gap-3 bg-neutral-900 px-4 text-sm font-semibold uppercase text-white transition hover:bg-neutral-600">Baixar — {price} créditos</button>
 </form>
+<p class="text-sm text-neutral-500">Download debitado da carteira do seu plano. Sem créditos suficientes, faça upgrade.</p>
+</div>
+</main>
+{rel.length ? <section class="mx-auto mt-16 w-full max-w-6xl px-4"><h2 class="text-2xl font-bold">Você também pode gostar</h2><div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{rel.map((r) => (<ModelCard item={r} />))}</div></section> : null}
 </Layout>

@@ -1,0 +1,14 @@
+---
+import CategoryCard from './CategoryCard.astro';
+import { listCategories } from '../lib/facets';
+export interface Props {heading?: string;}
+const {heading = 'Explorar por categoria'} = Astro.props;
+let cats: Awaited<ReturnType<typeof listCategories>> = [];
+try { cats = await listCategories(); } catch { cats = []; }
+---
+<section aria-label={heading}>
+<h2 class="text-2xl font-bold">{heading}</h2>
+<div class="mt-4 grid gap-4 sm:grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">
+{cats.map((c) => (<CategoryCard name={c.name} slug={c.slug} count={c.count} />))}
+</div>
+</section>

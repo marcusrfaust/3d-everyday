@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import ModelCard from '../components/ModelCard.astro';
 import { searchItems, listCategories, listTags } from '../lib/facets';
 export const prerender = false;
 const q = (Astro.url.searchParams.get('q') ?? '').trim();
@@ -13,25 +14,33 @@ try { [items, cats, tags] = await Promise.all([searchItems({q, category, tag}), 
 catch (e) { erro = e instanceof Error ? e.message : 'falha na busca'; }
 ---
 <Layout title="Buscar — 3d-Everyday">
-<h1>Buscar peças</h1>
+<main class="mx-auto mt-8 flex w-full max-w-6xl flex-wrap gap-4 px-4">
+<aside class="flex w-64 flex-col gap-6 py-4">
 <form method="get" action="/busca">
-<input type="search" name="q" value={q} placeholder="nome da peça">
-<button type="submit">Buscar</button>
+<input id="busca-q" type="search" name="q" value={q} placeholder="nome da peça" class="w-full border border-neutral-300 px-3 py-2">
+<button type="submit" class="mt-2 flex h-12 w-full items-center justify-center bg-neutral-900 px-4 text-sm font-semibold uppercase text-white transition hover:bg-neutral-600">Buscar</button>
 </form>
-<h2>Categorias</h2>
-<ul>{cats.map((c) => (<li><a href={`/busca?categoria=${c.slug}`}>{c.name} ({c.count})</a></li>))}</ul>
-<h2>Tags</h2>
-<ul>{tags.map((t) => (<li><a href={`/busca?tag=${t.slug}`}>{t.name} ({t.count})</a></li>))}</ul>
-{erro ? <p>Busca indisponível ({erro}).</p> : <>
-<p>{items.length} peças.</p>
-<ul>
-{items.map((it) => (
-<li>
-{it.photoId != null ? <a href={`/modelo/${it.id}`}><img src={`/api/thumb/${it.photoId}`} alt="" loading="lazy" width="160"></a> : null}
-<a href={`/modelo/${it.id}`}>{it.name}</a> — {it.price} créditos
-{it.categoryName ? <span> ({it.categoryName})</span> : null}
-</li>
-))}
+<div>
+<h2 class="text-lg font-bold">Categorias</h2>
+<ul class="mt-2 flex flex-col gap-1 text-sm">
+{cats.map((c) => (<li><a href={`/busca?categoria=${c.slug}`} class:list={[category === c.slug && 'font-bold underline']}>{c.name} ({c.count})</a></li>))}
 </ul>
+</div>
+<div>
+<h2 class="text-lg font-bold">Tags</h2>
+<ul class="mt-2 flex flex-col gap-1 text-sm">
+{tags.map((t) => (<li><a href={`/busca?tag=${t.slug}`} class:list={[tag === t.slug && 'font-bold underline']}>{t.name} ({t.count})</a></li>))}
+</ul>
+</div>
+</aside>
+<div class="min-w-0 flex-1">
+<h1 class="text-2xl font-bold">{q || category || tag ? 'Resultados' : 'Todas as peças'}</h1>
+{erro ? <p>Busca indisponível ({erro}).</p> : <>
+<p class="mt-1 text-sm text-neutral-600">{items.length} peças.</p>
+<div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+{items.map((it, idx) => (<ModelCard item={it} eager={idx === 0} />))}
+</div>
 </>}
+</div>
+</main>
 </Layout>
