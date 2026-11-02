@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><title>3d-Everyday — implementation-notes</title>
+<style>body{font-family:system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem}code{background:#f0f0f0;padding:0 .3em}pre{background:#f4f4f4;padding:1em;overflow:auto}</style>
+</head>
+<body>
+<h1>3d-Everyday (3DE) — implementation-notes</h1>
+<h2>Resumo</h2>
+<p>Vitrine nova (<code>3de.focol.ai</code>) sobre o catálogo do 3d-lib (somente leitura). Base estrutural: withastro/storefront (referência isolada em <code>/tmp/storefront-ref</code>, nunca commitada). Fase 1: casco + leitura readonly. Fase 2: créditos. Fase 3: Medusa.</p>
+<h2>Decisões de Arquitetura</h2>
+<ul>
+<li>3d-lib intocado: watcher + PG + D1 continuam; 3DE lê o D1 via REST server-only (mesmo padrão <code>web/src/lib/d1.ts</code>).</li>
+<li>Astro 5 SSR + Tailwind v4, sem React na fase 1; islands só se justificadas.</li>
+<li>Sem Stripe/Loops/Maps do storefront; checkout de reserva herdado do 3d-lib quando chegar a hora.</li>
+<li>Taxonomia Jev (23 mapeamentos tag→categoria) vira navegação por facetas (categoria/tag/formato).</li>
+<li>Medusa só na fase 3, plugado no 3DE — nunca no 3d-lib.</li>
+<li>Pendências de produto (planos/créditos): quantos planos, expira ou acumula, re-download gasta de novo — aguardando Marcus.</li>
+</ul>
+<h2>Arquivos Criados/Alterados</h2>
+<ul>
+<li><code>PRODUCT.md</code> — contexto durável (impeccable init, fatos inferidos marcados).</li>
+<li><code>package.json / astro.config.mjs / tsconfig.json / .env.example / .gitignore</code> — scaffold Astro 5 SSR.</li>
+<li><code>src/lib/d1.ts</code> — cliente D1 readonly (sem d1exec).</li>
+<li><code>src/lib/catalog.ts</code> — listItems/countItems/categories readonly.</li>
+<li><code>src/layouts/Layout.astro</code> — casco (nav + footer + slot).</li>
+<li><code>src/pages/index.astro</code> — home: grade de peças recentes com foto via thumb-proxy.</li>
+<li><code>src/pages/api/thumb/[fileId].ts</code> — proxy de foto (D1 local_path/Drive) — a implementar fase 1b.</li>
+</ul>
+<h2>Comandos Executados</h2>
+<pre>git init -b main ~/apps/3d-everyday
+git clone --depth 1 https://github.com/withastro/storefront /tmp/storefront-ref
+npm install / astro check (fase 1)</pre>
+<h2>Pendências/Riscos</h2>
+<ul>
+<li>D1 free estourou cota em 02/11/26 (erro 7500) — leitura readonly do 3DE soma consumo; monitorar; plano pago (~US$5/mês) como saída.</li>
+<li>Credenciais D1 (ACCOUNT/DB/TOKEN) ficam no .env do deploy, nunca no repo.</li>
+<li>Respostas pendentes de Marcus: nº de planos, expiração de créditos, re-download.</li>
+</ul>
+<h2>Como Testar/Verificar</h2>
+<pre>cd ~/apps/3d-everyday && npm install && npm run check
+# com .env preenchido:
+npm run dev  # http://localhost:4322 (porta própria, sem colidir com 3d-lib :4321)</pre>
+</body>
+</html>

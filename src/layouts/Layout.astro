@@ -1,0 +1,14 @@
+---
+// Casco 3DE — estrutura inspirada no storefront oficial, com material próprio.
+interface Props {title?: string;}
+const {title = '3d-Everyday'} = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>{title}</title></head>
+<body>
+<header><nav><a href="/">3d-Everyday</a> <a href="/login">Entrar</a></nav></header>
+<main><slot /></main>
+<footer><p>3d-Everyday — acervo 3D por créditos do plano Dash 3D.</p></footer>
+</body>
+</html>

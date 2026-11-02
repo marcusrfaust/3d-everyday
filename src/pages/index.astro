@@ -1,0 +1,20 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { listRecent, countItems } from '../lib/catalog';
+let items: Awaited<ReturnType<typeof listRecent>> = [];
+let total = 0;
+let erro: string | null = null;
+try { [items, total] = await Promise.all([listRecent(24), countItems()]); }
+catch (e) { erro = e instanceof Error ? e.message : 'falha ao carregar catálogo'; }
+---
+<Layout title="3d-Everyday — acervo 3D">
+<h1>Peças recentes</h1>
+{erro ? <p>Catálogo indisponível no momento ({erro}). Tente mais tarde.</p> : <>
+<p>{total} peças no acervo.</p>
+<ul>
+{items.map((it) => (
+<li><a href={`/modelo/${it.id}`}>{it.name}</a>{it.category ? <span> — {it.category}</span> : null}</li>
+))}
+</ul>
+</>}
+</Layout>
