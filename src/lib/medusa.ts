@@ -116,12 +116,19 @@ function normalizeCart(c: any): StoreCart {
 // Sem preferência hardcoded: com moeda → melhor preço nela; sem moeda (ou sem
 // preço nela) → 1º preço disponível (ordem do backend). Null só sem preço.
 export function productPrice(p: StoreProduct, currency?: unknown): StorePrice | null {
+  return priceInCurrency(p, currency).price;
+}
+// Variante com flag de fallback: exact=false quando exibimos preço de outra
+// moeda por falta de preço na moeda escolhida (UI deve avisar).
+export function priceInCurrency(p: StoreProduct, currency?: unknown): { price: StorePrice | null; exact: boolean } {
   const want = normalizeCurrency(currency);
   if (want) {
-    for (const v of p.variants ?? []) { const hit = (v.prices ?? []).find((x) => x.currency_code === want); if (hit) return hit; }
+    for (const v of p.variants ?? []) { const hit = (v.prices ?? []).find((x) => x.currency_code === want); if (hit) return { price: hit, exact: true }; }
+    for (const v of p.variants ?? []) { if ((v.prices ?? []).length) return { price: (v.prices as StorePrice[])[0], exact: false }; }
+    return { price: null, exact: false };
   }
-  for (const v of p.variants ?? []) { if ((v.prices ?? []).length) return (v.prices as StorePrice[])[0]; }
-  return null;
+  for (const v of p.variants ?? []) { if ((v.prices ?? []).length) return { price: (v.prices as StorePrice[])[0], exact: true }; }
+  return { price: null, exact: false };
 }
 export function formatMoney(amountMinor: number, currency: string): string {
   const code = String(currency ?? '').toUpperCase() || 'USD';

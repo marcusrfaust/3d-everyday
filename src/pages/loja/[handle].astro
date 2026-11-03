@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import CurrencySelector from '../../components/CurrencySelector.astro';
-import { getProduct, productPrice, formatMoney, normalizeCurrency, REGION_COOKIE } from '../../lib/medusa';
+import { getProduct, priceInCurrency, formatMoney, normalizeCurrency, REGION_COOKIE } from '../../lib/medusa';
 export const prerender = false;
 const handle = String(Astro.params.handle ?? '');
 const requested = Astro.url.searchParams.get('currency');
@@ -11,8 +11,10 @@ let product: Awaited<ReturnType<typeof getProduct>> = null;
 let erro: string | null = null;
 try { product = await getProduct(handle); } catch (e) { erro = e instanceof Error ? e.message : 'erro'; }
 if (!erro && !product) return new Response('produto não encontrado', { status: 404 });
-const pr = product ? productPrice(product, chosen ?? undefined) : null;
-const variantId = product?.variants?.[0]?.id ?? '';
+const found = product ? priceInCurrency(product, chosen ?? undefined) : { price: null, exact: false };
+const pr = found.price;
+const exactPrice = chosen ? found.exact : true;
+const variantId = exactPrice ? product?.variants?.[0]?.id ?? '' : '';
 const current = chosen ?? pr?.currency_code ?? 'usd';
 ---
 <Layout title={`${product?.title ?? 'Produto'} — Loja 3d-Everyday`}>
@@ -26,14 +28,15 @@ const current = chosen ?? pr?.currency_code ?? 'usd';
 {erro ? <p class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">Loja indisponível ({erro}).</p> : null}
 <h1 class="font-display text-3xl font-extrabold tracking-tight">{product?.title}</h1>
 <p class="font-mono text-2xl font-bold text-ember-800">{pr ? formatMoney(pr.amount, pr.currency_code) : 'preço sob consulta'}</p>
+{pr && !exactPrice ? <p class="text-xs text-stone-500">Preço exibido em {pr.currency_code.toUpperCase()} — sem preço nesta moeda no momento.</p> : null}
 {(product?.variants?.length ?? 0) > 1 ? <p class="text-sm text-stone-500">Variação: {product?.variants?.[0]?.title ?? 'única'} (+{(product?.variants?.length ?? 1) - 1} opções no checkout)</p> : null}
 {variantId ? <form method="post" action="/api/cart/add">
 <input type="hidden" name="variantId" value={variantId} />
 <div class="flex items-center gap-3">
-<label class="text-sm font-semibold">Qtd <input type="number" name="qty" value="1" min="1" max="99" class="ml-2 w-16 rounded-md border border-stone-300 px-2 py-2" /></label>
-<button type="submit" class="flex h-12 flex-1 cursor-pointer items-center justify-center bg-ember-700 px-4 text-sm font-semibold uppercase text-white transition hover:bg-ember-800">Adicionar ao carrinho</button>
+<label for="qty" class="text-sm font-semibold">Qtd</label><input id="qty" type="number" name="qty" value="1" min="1" max="99" class="ml-2 w-16 rounded-md border border-stone-300 px-2 py-2" />
+<button type="submit" aria-label="Adicionar ao carrinho" class="flex h-12 flex-1 cursor-pointer items-center justify-center bg-ember-700 px-4 text-sm font-semibold uppercase text-white transition hover:bg-ember-800">Adicionar ao carrinho</button>
 </div>
-</form> : <p class="text-sm text-stone-500">Produto sem variação comprável no momento.</p>}
+</form> : <p class="text-sm text-stone-500">{pr && !exactPrice ? 'Produto sem preço nesta moeda no momento — troque a moeda para comprar.' : 'Produto sem variação comprável no momento.'}</p>}
 </div>
 </main>
 </Layout>

@@ -7,9 +7,9 @@ const opts: Array<[string, string]> = [['usd', 'USD — US$'], ['eur', 'EUR — 
 <form method="post" action="/api/cart/currency" class="flex items-center gap-2 text-sm">
 <input type="hidden" name="next" value={next} />
 <label class="font-semibold text-stone-600">Moeda
-<select name="currency" class="ml-2 rounded-md border border-stone-300 bg-white px-2 py-1">
+<select aria-label="Escolher moeda" name="currency" class="ml-2 rounded-md border border-stone-300 bg-white px-2 py-1">
 {opts.map(([v, label]) => <option value={v} selected={v === current}>{label}</option>)}
 </select>
 </label>
-<button type="submit" class="cursor-pointer rounded-md border border-stone-300 px-2 py-1 text-sm hover:border-ember-700 hover:text-ember-700">OK</button>
+<button type="submit" aria-label="Aplicar moeda" class="cursor-pointer rounded-md border border-stone-300 px-2 py-1 text-sm hover:border-ember-700 hover:text-ember-700">OK</button>
 </form>

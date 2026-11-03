@@ -2,7 +2,7 @@
 // Roda: npm test. Gerado por `npm run build:test` (esbuild de src/lib/medusa.ts).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatMoney, productPrice, cartCount, normalizeCurrency, resolveRequestCurrency, localeForCurrency, resolveRegionId } from './_medusa.mjs';
+import { formatMoney, productPrice, priceInCurrency, cartCount, normalizeCurrency, resolveRequestCurrency, localeForCurrency, resolveRegionId } from './_medusa.mjs';
 
 test('normalizeCurrency aceita USD/EUR/BRL (case/trim) e rejeita resto', () => {
   assert.equal(normalizeCurrency('USD'), 'usd');
@@ -63,6 +63,14 @@ test('resolveRegionId escolhe região da moeda; fallback 1ª; erro sem regiões'
   } finally {
     globalThis.fetch = realFetch;
   }
+});
+
+test('priceInCurrency sinaliza fallback (exact=false)', () => {
+  const p = { id: 'x', title: 'T', handle: 't', thumbnail: null, variants: [{ id: 'v1', title: null, prices: [{ amount: 1000, currency_code: 'eur' }] }] };
+  assert.deepEqual(priceInCurrency(p, 'eur'), { price: { amount: 1000, currency_code: 'eur' }, exact: true });
+  assert.deepEqual(priceInCurrency(p, 'usd'), { price: { amount: 1000, currency_code: 'eur' }, exact: false });
+  assert.deepEqual(priceInCurrency(p), { price: { amount: 1000, currency_code: 'eur' }, exact: true });
+  assert.deepEqual(priceInCurrency({ id: 'y', title: 'Y', handle: 'y', thumbnail: null, variants: [] }, 'usd'), { price: null, exact: false });
 });
 
 test('cartCount soma quantidades', () => {
