@@ -93,7 +93,8 @@ export async function updateLine(cartId: string, lineId: string, quantity: numbe
   const d = quantity <= 0
     ? await store(`/store/carts/${cartId}/line-items/${lineId}`, { method: 'DELETE' })
     : await store(`/store/carts/${cartId}/line-items/${lineId}`, { method: 'POST', body: JSON.stringify({ quantity }) });
-  return normalizeCart(d.cart);
+  // DELETE do Medusa retorna {deleted:true, parent:{cart…}} sem .cart.
+  return normalizeCart((d as any).cart ?? (d as any).parent ?? d);
 }
 export async function completeCart(cartId: string): Promise<{ type: string; orderId?: string }> {
   const d = await store(`/store/carts/${cartId}/complete`, { method: 'POST' });

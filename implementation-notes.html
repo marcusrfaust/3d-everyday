@@ -1,12 +1,21 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="utf-8"><title>3d-Everyday — implementation-notes</title>
-<style>body{font-family:system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem}code{background:#f0f0f0;padding:0 .3em}pre{background:#f4f4f4;padding:1em;overflow:auto}</style>
+<style>body{font-family:system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem}code{background:#f0f0f0;padding:0 .3em}pre{background:#f4f4f4;padding:1em;overflow:auto}table{border-collapse:collapse}td,th{border:1px solid #ddd;padding:.3em .6em;font-size:.9em}</style>
 </head>
 <body>
 <h1>3d-Everyday (3DE) — implementation-notes</h1>
+<p><strong>Estado final loja global — 2026-11-03.</strong> Branch <code>feat/loja-global</code>, PR #3 OPEN. Commits <code>31e8081</code> + <code>8fa8eec</code> (harden). <code>npm test</code> 13/13, <code>astro check</code> 0 erros. Fonte-irmã: <code>wiki/310-CLIENTS/dash3d/3DE-loja-global-2026-11-03.md</code> (mesmo conteúdo, mais detalhe).</p>
 <h2>Resumo</h2>
-<p>Vitrine nova (<code>3de.focol.ai</code>) sobre o catálogo do 3d-lib (somente leitura). Base estrutural: withastro/storefront (referência isolada em <code>/tmp/storefront-ref</code>, nunca commitada). Fase 1: casco + leitura readonly. Fase 2: créditos. Fase 3: Medusa.</p>
+<p>Vitrine nova (<code>3de.focol.ai</code>) sobre o catálogo do 3d-lib (somente leitura). Base estrutural: withastro/storefront (referência isolada em <code>/tmp/storefront-ref</code>, nunca commitada). Fase 1: casco + leitura readonly. Fase 2: créditos. Fase 3 (em curso): Medusa plugado no 3DE — 6 regiões / 95 países, tri-moeda USD/EUR/BRL, frete Standard+Express por zona.</p>
+<h2>Medusa (<code>~/apps/medusa-3de</code>)</h2>
+<ul>
+<li>Compose tudo <code>127.0.0.1</code>: <code>medusa-pg</code> postgres:16 <code>:5436</code>, <code>medusa-redis</code> redis:8.2 <code>:6380</code> com auth, <code>medusa-server</code> <code>:9000</code> com healthcheck <code>/health</code>. 3/3 <code>Up (healthy)</code>.</li>
+<li>Hardening: redis auth, healthchecks, <code>scripts/backup.sh</code> (pg_dump + uploads, retenção 7d) + cron <code>23 3 * * *</code>, <code>sslmode=disable</code> documentado (PG interno sem TLS), <code>.env</code> 600, <code>.dockerignore</code> com <code>**/.env</code>, admin fix <code>public/admin</code>.</li>
+<li>6 regiões / 95 países: Europe eur/32 (<code>reg_01M6FRK1KZQKFEV9R0KWZ6TBFC</code>), Brasil brl/1 (<code>reg_01M6GSV3T12WM7XWNJ08HQP5DF</code>), North America usd/3, Latin America usd/20, Asia-Pacific usd/20, Middle East &amp; Africa usd/19. Preços nas 3 moedas; 4 produtos publicados.</li>
+<li>Frete: 1 fulfillment set (<code>fuset_01M6FRK1SE9ZB22B1H</code>) + 6 service zones (<code>serzo_…</code>, 1/região) + 12 shipping options Standard/Express flat. Detalhe e IDs completos na wiki-irmã.</li>
+<li>Publishable key título <code>3d-everyday-store</code> ligada ao Default Sales Channel. Pagamento: só <code>pp_system_default</code> (sem provedor real — pendência).</li>
+</ul>
 <h2>Decisões de Arquitetura</h2>
 <ul>
 <li>3d-lib intocado: watcher + PG + D1 continuam; 3DE lê o D1 via REST server-only (mesmo padrão <code>web/src/lib/d1.ts</code>).</li>
@@ -14,30 +23,56 @@
 <li>Sem Stripe/Loops/Maps do storefront; checkout de reserva herdado do 3d-lib quando chegar a hora.</li>
 <li>Taxonomia Jev (23 mapeamentos tag→categoria) vira navegação por facetas (categoria/tag/formato).</li>
 <li>Medusa só na fase 3, plugado no 3DE — nunca no 3d-lib.</li>
+<li>Moeda sem preferência hardcoded: padrão = 1ª região do backend; <code>?currency=</code> vence cookie <code>medusa_region</code>; sem preço na moeda → fallback com aviso (nunca number inventado).</li>
+<li>CSRF: Astro 5.18 sem allowlist nativa → <code>src/middleware.ts</code> próprio (allowlist <code>3de.focol.ai</code> + localhost; <code>PREVIEW_HOSTS</code> exatos via env).</li>
+<li>Cookies <code>medusa_cart</code> (httpOnly, 7d) + <code>medusa_region</code> (httpOnly, 1a), <code>SameSite=Lax</code>, <code>Secure</code> em PROD/https. IDs opacos validados (<code>safeId</code>), redirects internos (<code>safeNext</code>).</li>
 <li>Pendências de produto (planos/créditos): quantos planos, expira ou acumula, re-download gasta de novo — aguardando Marcus.</li>
 </ul>
-<h2>Arquivos Criados/Alterados</h2>
+<h2>Arquivos Criados/Alterados (loja global)</h2>
 <ul>
+<li><code>src/lib/medusa.ts</code> — client server-side Store API (chave nunca vaza) + puras testadas.</li>
+<li><code>src/middleware.ts</code> — CSRF allowlist.</li>
+<li><code>src/components/CurrencySelector.astro</code> — seletor USD/EUR/BRL.</li>
+<li><code>src/pages/loja/index.astro</code> — grade 24 produtos.</li>
+<li><code>src/pages/loja/[handle].astro</code> — detalhe com fallback de preço.</li>
+<li><code>src/pages/loja/carrinho.astro</code> — cart (moeda do cart = verdade).</li>
+<li><code>src/pages/api/cart/[action].ts</code> — <code>add|update|checkout|currency</code>.</li>
+<li><code>src/layouts/Layout.astro</code> — link loja; <code>.env.example</code> — <code>MEDUSA_URL</code> + <code>MEDUSA_PUBLISHABLE_KEY</code> vazios; <code>tests/medusa.test.mjs</code> — 13 testes.</li>
 <li><code>PRODUCT.md</code> — contexto durável (impeccable init, fatos inferidos marcados).</li>
 <li><code>package.json / astro.config.mjs / tsconfig.json / .env.example / .gitignore</code> — scaffold Astro 5 SSR.</li>
 <li><code>src/lib/d1.ts</code> — cliente D1 readonly (sem d1exec).</li>
 <li><code>src/lib/catalog.ts</code> — listItems/countItems/categories readonly.</li>
-<li><code>src/layouts/Layout.astro</code> — casco (nav + footer + slot).</li>
-<li><code>src/pages/index.astro</code> — home: grade de peças recentes com foto via thumb-proxy.</li>
-<li><code>src/pages/api/thumb/[fileId].ts</code> — proxy de foto (D1 local_path/Drive) — a implementar fase 1b.</li>
+<li><code>src/pages/api/thumb/[fileId].ts</code> — proxy de foto (D1 local_path/Drive).</li>
+</ul>
+<h2>Credenciais (só caminhos — NUNCA valores)</h2>
+<ul>
+<li><code>~/.secrets/medusa-3de-admin-pass</code> (600) — admin do dashboard.</li>
+<li><code>~/.secrets/medusa-3de-publishable</code> (600) — <code>MEDUSA_PUBLISHABLE_KEY</code>.</li>
+<li><code>.env</code> do deploy 3DE (<code>MEDUSA_URL</code> + <code>MEDUSA_PUBLISHABLE_KEY</code>) — nunca no repo.</li>
 </ul>
 <h2>Comandos Executados</h2>
 <pre>git init -b main ~/apps/3d-everyday
 git clone --depth 1 https://github.com/withastro/storefront /tmp/storefront-ref
-npm install / astro check (fase 1)</pre>
+npm install / astro check (fase 1)
+# loja global:
+curl -sm 10 http://127.0.0.1:9000/health  # OK
+# regions (com $PUB de ~/.secrets/medusa-3de-publishable): 6 regiões, 95 países
+# products count: 4
+cd ~/apps/3d-everyday && npm test        # 13 pass / 0 fail
+cd ~/apps/3d-everyday && npm run check   # 0 errors</pre>
 <h2>Pendências/Riscos</h2>
 <ul>
+<li><strong>Pagamento real</strong> — só <code>pp_system_default</code>; definir provedor antes de vender.</li>
+<li><strong>Catálogo real</strong> — 4 produtos publicados (seed/demo); cadastrar catálogo final + preços nas 3 moedas.</li>
+<li><code>store.supported_currencies</code> = eur+usd (sem brl) com região BRL ativa — validar se checkout BRL exige adicionar <code>brl</code> ao store.</li>
 <li>D1 free estourou cota em 02/11/26 (erro 7500) — leitura readonly do 3DE soma consumo; monitorar; plano pago (~US$5/mês) como saída.</li>
 <li>Credenciais D1 (ACCOUNT/DB/TOKEN) ficam no .env do deploy, nunca no repo.</li>
+<li>PR #3 OPEN — DONE GATE: merge → RedTeam ≥90 → verificar no ar → kanban.</li>
 <li>Respostas pendentes de Marcus: nº de planos, expiração de créditos, re-download.</li>
 </ul>
 <h2>Como Testar/Verificar</h2>
 <pre>cd ~/apps/3d-everyday && npm install && npm run check
+npm test  # 13 pass
 # com .env preenchido:
 npm run dev  # http://localhost:4322 (porta própria, sem colidir com 3d-lib :4321)</pre>
 </body>
