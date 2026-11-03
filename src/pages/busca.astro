@@ -1,0 +1,54 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ModelCard from '../components/ModelCard.astro';
+import { searchItems, listCategories, listTags } from '../lib/facets';
+import { groupFacets } from '../lib/taggroups';
+export const prerender = false;
+const q = (Astro.url.searchParams.get('q') ?? '').trim();
+const category = (Astro.url.searchParams.get('categoria') ?? '').trim();
+const tag = (Astro.url.searchParams.get('tag') ?? '').trim();
+let items: Awaited<ReturnType<typeof searchItems>> = [];
+let erro: string | null = null;
+let cats: Awaited<ReturnType<typeof listCategories>> = [];
+let tags: Awaited<ReturnType<typeof listTags>> = [];
+try { [items, cats, tags] = await Promise.all([searchItems({q, category, tag}), listCategories(), listTags()]); }
+catch (e) { erro = e instanceof Error ? e.message : 'falha na busca'; }
+---
+<Layout title="Buscar — 3d-Everyday">
+<main class="mx-auto mt-8 flex w-full max-w-6xl flex-wrap gap-5 px-4">
+<aside class="flex w-64 flex-col gap-5 rounded-xl border border-stone-200 bg-white p-4">
+<form method="get" action="/busca" role="search">
+<label for="busca-q" class="text-xs font-bold uppercase tracking-widest text-stone-500">Buscar</label>
+<input id="busca-q" type="search" name="q" value={q} placeholder="nome da peça" class="mt-1 h-10 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 text-sm">
+<button type="submit" class="mt-2 flex h-12 w-full cursor-pointer items-center justify-center bg-ember-700 px-4 text-sm font-semibold uppercase text-white transition hover:bg-ember-800">Buscar</button>
+</form>
+<div>
+<h2 class="font-display text-base font-extrabold">Categorias</h2>
+<ul class="mt-2 flex flex-col gap-1.5 text-sm">
+{cats.map((c) => (<li><a href={`/busca?categoria=${c.slug}`} class:list={[category === c.slug && 'font-bold text-ember-700 underline', 'hover:text-ember-700 hover:underline']}>{c.name} <span class="font-mono text-xs text-stone-500">({c.count})</span></a></li>))}
+</ul>
+</div>
+<div>
+<h2 class="font-display text-base font-extrabold">Tags</h2>
+{groupFacets(tags).map((g) => (
+<div class="mt-3 border-t border-stone-100 pt-2">
+<p class="text-xs font-bold uppercase tracking-widest text-stone-500">{g.label}</p>
+<ul class="mt-1 flex flex-col gap-1.5 text-sm">
+{g.tags.map((t) => (<li><a href={`/busca?tag=${t.full}`} class:list={[tag === t.full && 'font-bold text-ember-700 underline', 'hover:text-ember-700 hover:underline']}>{t.short} <span class="font-mono text-xs text-stone-500">({t.count})</span></a></li>))}
+</ul>
+</div>
+))}
+</div>
+</aside>
+<div class="min-w-0 flex-1">
+<p class="text-xs font-bold uppercase tracking-widest text-ember-700">{q || category || tag ? 'Resultados' : 'Catálogo'}</p>
+<h1 class="mt-1 font-display text-2xl font-extrabold tracking-tight md:text-3xl">{q || category || tag ? 'Resultados' : 'Todas as peças'}</h1>
+{erro ? <p class="mt-2 text-sm text-red-700">Busca indisponível ({erro}).</p> : <>
+<p class="mt-1 font-mono text-sm text-stone-500">{items.length} peças.</p>
+<div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+{items.map((it, idx) => (<ModelCard item={it} eager={idx === 0} />))}
+</div>
+</>}
+</div>
+</main>
+</Layout>

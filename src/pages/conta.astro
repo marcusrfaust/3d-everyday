@@ -13,13 +13,20 @@ const plan = getPlan(String(users[0].plan));
 const [saldo, linhas] = await Promise.all([balanceOf(uid), extrato(uid)]);
 ---
 <Layout title="Minha conta — 3d-Everyday">
-<h1>Minha conta</h1>
-<p>{String(users[0].email)} — plano {plan.nome}</p>
-<p>Saldo: <strong>{saldo} créditos</strong> ({plan.mensal}/mês{plan.acumula ? `, acumula até ${plan.teto}` : ', não acumula'})</p>
-<h2>Extrato</h2>
-<ul>
-{linhas.map((l) => (
-<li>{String(l.created_at)} — {Number(l.delta) > 0 ? '+' : ''}{Number(l.delta)} ({String(l.reason)}{l.item_id ? ` peça ${l.item_id}` : ''})</li>
-))}
+<main class="mx-auto mt-8 w-full max-w-6xl px-4">
+<p class="text-xs font-bold uppercase tracking-widest text-ember-700">Conta</p>
+<h1 class="mt-1 font-display text-2xl font-extrabold tracking-tight md:text-3xl">Minha conta</h1>
+<p class="mt-1 text-sm text-stone-600">{String(users[0].email)} — plano {plan.nome}</p>
+<div class="mt-4 rounded-xl border border-stone-200 bg-white p-5">
+<p class="text-xs font-bold uppercase tracking-widest text-stone-500">Saldo atual</p>
+<p class="mt-1 font-mono text-3xl font-bold text-ember-800">{saldo} <span class="text-base">créditos</span></p>
+<p class="mt-1 text-sm text-stone-600">{plan.mensal}/mês{plan.acumula ? `, acumula até ${plan.teto}` : ', não acumula'}</p>
+</div>
+<h2 class="mt-8 font-display text-lg font-extrabold">Extrato</h2>
+<ul class="mt-2 divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white text-sm">
+{linhas.length ? linhas.map((l) => (
+<li class="flex flex-wrap justify-between gap-2 px-4 py-2"><span class="text-stone-600">{String(l.created_at)} — {String(l.reason)}{l.item_id ? ` peça ${l.item_id}` : ''}</span><span class="font-mono font-bold">{Number(l.delta) > 0 ? '+' : ''}{Number(l.delta)}</span></li>
+)) : <li class="px-4 py-3 text-stone-500">Nenhuma movimentação ainda.</li>}
 </ul>
+</main>
 </Layout>

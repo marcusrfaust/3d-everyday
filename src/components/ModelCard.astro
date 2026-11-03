@@ -1,0 +1,20 @@
+---
+// Cartão de peça: foto + nome display + preço chip mono. Sem foto real, placeholder.
+import type { CatalogItem } from '../lib/catalog';
+interface Props {item: CatalogItem; eager?: boolean;}
+const {item, eager} = Astro.props;
+---
+<a href={`/modelo/${item.id}`} class="card-lift group relative block w-full overflow-hidden rounded-xl border border-stone-200 bg-white focus-visible:ring-0" aria-label={`${item.name} por ${item.price} créditos`}>
+<article>
+<div class="relative flex aspect-[5/6] items-center justify-center overflow-hidden bg-stone-100">
+{item.photoId != null
+? <img src={`/api/thumb/${item.photoId}`} alt={item.name} loading={eager ? 'eager' : 'lazy'} draggable="false" class="h-full w-full object-cover" />
+: <span class="px-4 text-center text-sm text-stone-500">Sem foto — em curadoria</span>}
+</div>
+<div class="flex flex-col gap-2 p-3">
+<h3 class="font-display text-[15px] font-bold leading-snug text-stone-900">{item.name}</h3>
+<p><span class="inline-block rounded-md bg-stone-900 px-2 py-1 font-mono text-xs font-bold text-white">{item.price} créditos</span></p>
+</div>
+</article>
+<div class="pointer-events-none absolute inset-0 ring-inset ring-stone-900 group-focus-visible:ring-2"></div>
+</a>

@@ -1,0 +1,17 @@
+---
+import ModelCard from './ModelCard.astro';
+import SectionHeader from './SectionHeader.astro';
+import { listRecent } from '../lib/catalog';
+export interface Props {heading?: string;}
+const {heading = 'Em destaque agora'} = Astro.props;
+let items: Awaited<ReturnType<typeof listRecent>> = [];
+try { items = await listRecent(10); } catch { items = []; }
+---
+<section aria-label={heading}>
+<SectionHeader eyebrow="Destaques" title={heading} linkHref="/busca" linkLabel="Ver tudo →" />
+<div class="mt-5 flex snap-x gap-4 overflow-x-auto pb-4">
+{items.map((it, idx) => (
+<div class="w-60 shrink-0 snap-start sm:w-72"><ModelCard item={it} eager={idx === 0} /></div>
+))}
+</div>
+</section>
