@@ -14,7 +14,7 @@ try { navCats = (await listCategories()).slice(0, 10); } catch { navCats = []; }
 ---
 <!DOCTYPE html>
 <html lang="pt-BR" class="bg-stone-50 text-stone-900">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="theme-color" content="#0c0a09"><link rel="icon" type="image/png" href="/logo.png"><title>{title}</title>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="theme-color" content="#0c0a09"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta property="og:image" content="https://3de.focol.ai/icon-512.png"><meta name="twitter:card" content="summary"><title>{title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -22,7 +22,7 @@ try { navCats = (await listCategories()).slice(0, 10); } catch { navCats = []; }
 <header class="sticky top-0 z-50 border-b border-stone-200 bg-white">
 <nav aria-label="Navegação do site" class="mx-auto flex min-h-20 max-w-6xl flex-row flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2">
 <a href="/" class="flex items-center gap-2" aria-label="3d-Everyday — início">
-<img src="/logo.png" alt="3d-Everyday" width="691" height="279" class="h-10 w-auto" loading="eager" decoding="async">
+<img src="/logo.png" alt="" width="360" height="146" class="h-12 w-auto" loading="eager" fetchpriority="high" decoding="async">
 </a>
 <form action="/busca" method="get" class="hidden min-w-0 flex-1 sm:flex" role="search">
 <input type="search" name="q" placeholder="Buscar peças..." aria-label="Buscar peças" class="h-10 w-full rounded-full border border-stone-200 bg-stone-50 px-4 text-sm">
@@ -38,7 +38,7 @@ try { navCats = (await listCategories()).slice(0, 10); } catch { navCats = []; }
 <footer class="mt-24 border-t border-stone-200 bg-white">
 <div class="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm sm:grid-cols-3">
 <div>
-<p class="flex items-center gap-2"><img src="/logo.png" alt="3d-Everyday" width="691" height="279" class="h-8 w-auto" loading="lazy" decoding="async"></p>
+<p class="flex items-center gap-2"><img src="/logo.png" alt="3d-Everyday" width="360" height="146" class="h-8 w-auto" loading="lazy" decoding="async"></p>
 <p class="mt-2 text-stone-600">Acervo 3D por créditos do plano Dash 3D. Catálogo em curadoria.</p>
 </div>
 <div>
