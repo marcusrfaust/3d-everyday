@@ -1,0 +1,32 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import SectionHeader from '../../components/SectionHeader.astro';
+import CurrencySelector from '../../components/CurrencySelector.astro';
+import { listProducts, priceInCurrency, formatMoney, normalizeCurrency, REGION_COOKIE } from '../../lib/medusa';
+export const prerender = false;
+// ?currency= vence o cookie medusa_region e é persistido; sem escolha, cada
+// produto exibe o 1º preço do backend (ordem da região padrão).
+const requested = Astro.url.searchParams.get('currency');
+const chosen = normalizeCurrency(requested) ?? normalizeCurrency(Astro.cookies.get(REGION_COOKIE)?.value) ?? null;
+if (requested && chosen) Astro.cookies.set(REGION_COOKIE, chosen, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+let products: Awaited<ReturnType<typeof listProducts>> = [];
+let lojaErro: string | null = null;
+try { products = await listProducts(24); } catch (e) { lojaErro = e instanceof Error ? e.message : 'erro'; }
+const current = chosen ?? products.map((p) => priceInCurrency(p).price?.currency_code).find(Boolean) ?? 'usd';
+---
+<Layout title="Loja — 3d-Everyday">
+<main class="mx-auto w-full max-w-6xl px-4 py-8">
+<SectionHeader eyebrow="Catálogo" title="Loja" />
+<p class="mt-2 text-sm text-stone-500">Produtos do backend Medusa — pagamento e catálogo final em configuração.</p>
+<div class="mt-4 flex items-center justify-end"><CurrencySelector current={current} next="/loja" /></div>
+{lojaErro ? <p class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">Loja indisponível no momento ({lojaErro}). Tente novamente em instantes.</p> : null}
+{!lojaErro && !products.length ? <p class="text-sm text-stone-500">Nenhum produto publicado no momento.</p> : null}
+<div class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+{products.map((p) => { const found = priceInCurrency(p, chosen ?? undefined); const pr = found.price; const exact = chosen ? found.exact : true; return (
+<a href={`/loja/${p.handle}`} class="group overflow-hidden rounded-xl border border-stone-200 bg-white transition hover:-translate-y-1 hover:shadow-lg">
+<div class="flex aspect-square items-center justify-center bg-stone-100">{p.thumbnail ? <img src={p.thumbnail} alt={p.title} class="h-full w-full object-cover" loading="lazy" /> : <span class="px-2 text-center text-xs text-stone-400">sem foto</span>}</div>
+<div class="p-3"><p class="truncate text-sm font-bold">{p.title}</p><p class="mt-1 font-mono text-sm font-bold text-ember-800">{pr ? formatMoney(pr.amount, pr.currency_code) : 'preço sob consulta'}</p>{pr && !exact ? <p class="text-xs text-stone-500">em {pr.currency_code.toUpperCase()}</p> : null}</div>
+</a>); })}
+</div>
+</main>
+</Layout>

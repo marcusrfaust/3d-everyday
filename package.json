@@ -1,1 +1,25 @@
-{"name":"3d-everyday","type":"module","version":"0.1.0","private":true,"scripts":{"dev":"astro dev --port 4322","build":"astro build","preview":"astro preview","check":"astro check","build:test":"esbuild src/lib/plans.ts --bundle --format=esm --outfile=tests/_plans.mjs --log-level=error","test":"npm run build:test && node --test tests/credits.test.mjs"},"dependencies":{"@astrojs/node":"^9.5.5","astro":"^5.0.0"},"devDependencies":{"@astrojs/check":"^0.9.4","@tailwindcss/vite":"^4.0.0","@types/node":"^26.6.6","tailwindcss":"^4.0.0","typescript":"^5.6.0"}}
+{
+  "name": "3d-everyday",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev --port 4322",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "build:test": "esbuild src/lib/plans.ts --bundle --format=esm --outfile=tests/_plans.mjs --log-level=error && esbuild src/lib/medusa.ts --bundle --format=esm --outfile=tests/_medusa.mjs --log-level=error --define:import.meta.env.MEDUSA_URL='\"http://127.0.0.1:9000\"' --define:import.meta.env.MEDUSA_PUBLISHABLE_KEY='\"\"'",
+    "test": "npm run build:test && node --test tests/credits.test.mjs tests/medusa.test.mjs"
+  },
+  "dependencies": {
+    "@astrojs/node": "^9.5.5",
+    "astro": "^5.0.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/node": "^26.6.6",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.6.0"
+  }
+}
