@@ -27,14 +27,14 @@ const current = chosen ?? pr?.currency_code ?? 'usd';
 <div class="flex items-center justify-end"><CurrencySelector current={current} next={`/loja/${handle}`} /></div>
 {erro ? <p class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">Loja indisponível ({erro}).</p> : null}
 <h1 class="font-display text-3xl font-extrabold tracking-tight">{product?.title}</h1>
-<p class="font-mono text-2xl font-bold text-ember-800">{pr ? formatMoney(pr.amount, pr.currency_code) : 'preço sob consulta'}</p>
+<p class="font-mono text-2xl font-bold text-brand-700">{pr ? formatMoney(pr.amount, pr.currency_code) : 'preço sob consulta'}</p>
 {pr && !exactPrice ? <p class="text-xs text-stone-500">Preço exibido em {pr.currency_code.toUpperCase()} — sem preço nesta moeda no momento.</p> : null}
 {(product?.variants?.length ?? 0) > 1 ? <p class="text-sm text-stone-500">Variação: {product?.variants?.[0]?.title ?? 'única'} (+{(product?.variants?.length ?? 1) - 1} opções no checkout)</p> : null}
 {variantId ? <form method="post" action="/api/cart/add">
 <input type="hidden" name="variantId" value={variantId} />
 <div class="flex items-center gap-3">
 <label for="qty" class="text-sm font-semibold">Qtd</label><input id="qty" type="number" name="qty" value="1" min="1" max="99" class="ml-2 w-16 rounded-md border border-stone-300 px-2 py-2" />
-<button type="submit" aria-label="Adicionar ao carrinho" class="flex h-12 flex-1 cursor-pointer items-center justify-center bg-ember-700 px-4 text-sm font-semibold uppercase text-white transition hover:bg-ember-800">Adicionar ao carrinho</button>
+<button type="submit" aria-label="Adicionar ao carrinho" class="flex h-12 flex-1 cursor-pointer items-center justify-center bg-brand-600 px-4 text-sm font-semibold uppercase text-white transition hover:bg-brand-700">Adicionar ao carrinho</button>
 </div>
 </form> : <p class="text-sm text-stone-500">{pr && !exactPrice ? 'Produto sem preço nesta moeda no momento — troque a moeda para comprar.' : 'Produto sem variação comprável no momento.'}</p>}
 </div>

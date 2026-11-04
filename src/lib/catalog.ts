@@ -10,6 +10,9 @@ export const DEV_SAMPLE_LIMIT = 100;
 const BASE = `i.status IN ('reposted','captured') AND i.is_adult = 0`;
 // Vitrine só lista peça baixável: com documento que tenha link no Drive.
 const COM_ARQUIVO = `EXISTS (SELECT 1 FROM files d WHERE d.item_id = i.id AND d.kind = 'document' AND d.drive_url LIKE 'https://drive.google.com/%')`;
+// Vitrine só anuncia peça com imagem destacada real (decisão Marcus 04/11/26):
+// sem foto, sem card. Placeholder do ModelCard é só rede de segurança.
+export const COM_FOTO = `EXISTS (SELECT 1 FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' AND (f.local_path IS NOT NULL AND f.local_path <> '' OR f.drive_url LIKE 'https://drive.google.com/%'))`;
 // Limpa nome de arquivo/título: tira extensões (mesmo duplas, "..zip"), troca
 // separadores por espaço, remove rabo de ingestão (data + sufixo de lote:
 // "...3mf20260908_1_ru") e tokens soltos de formato no meio do nome.
@@ -39,7 +42,7 @@ export async function listRecent(limit = 24): Promise<CatalogItem[]> {
       (SELECT f.id FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' AND (f.local_path IS NOT NULL AND f.local_path <> '' OR f.drive_url LIKE 'https://drive.google.com/%') ORDER BY f.id DESC LIMIT 1) AS photoId,
       (SELECT f2.file_name FROM files f2 WHERE f2.item_id = i.id AND f2.kind = 'document' ORDER BY f2.id ASC LIMIT 1) AS fileName,
       (SELECT COALESCE(SUM(f3.size_bytes),0) FROM files f3 WHERE f3.item_id = i.id AND f3.kind = 'document') AS totalBytes
-     FROM items i LEFT JOIN categories c ON c.id = i.category_id WHERE ${BASE} AND ${COM_ARQUIVO} ORDER BY i.created_at DESC LIMIT ?`, [n]);
+     FROM items i LEFT JOIN categories c ON c.id = i.category_id WHERE ${BASE} AND ${COM_ARQUIVO} AND ${COM_FOTO} ORDER BY i.created_at DESC LIMIT ?`, [n]);
   const overs = n ? await priceOverrides(rows.map((r) => Number(r.id))) : new Map<number, number>();
   return rows.map((r) => {
     const id = Number(r.id);

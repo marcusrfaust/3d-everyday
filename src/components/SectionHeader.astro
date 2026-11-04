@@ -1,12 +1,12 @@
 ---
-/* Cabeçalho de seção no padrão da casa: eyebrow ember + título display + link. */
+/* Cabeçalho de seção no padrão da casa: eyebrow na cor da marca + título display + link. */
 interface Props {eyebrow: string; title: string; linkHref?: string; linkLabel?: string;}
 const {eyebrow, title, linkHref, linkLabel} = Astro.props;
 ---
 <div class="flex flex-wrap items-end justify-between gap-2">
 <div>
-<p class="text-xs font-bold uppercase tracking-widest text-ember-700">{eyebrow}</p>
+<p class="text-xs font-bold uppercase tracking-widest text-brand-600">{eyebrow}</p>
 <h2 class="mt-1 font-display text-2xl font-extrabold tracking-tight text-stone-900 md:text-3xl">{title}</h2>
 </div>
-{linkHref ? <a href={linkHref} class="text-sm font-semibold text-ember-700 hover:text-ember-800 hover:underline">{linkLabel ?? 'Ver tudo →'}</a> : null}
+{linkHref ? <a href={linkHref} class="text-sm font-semibold text-brand-600 hover:text-brand-700 hover:underline">{linkLabel ?? 'Ver tudo →'}</a> : null}
 </div>

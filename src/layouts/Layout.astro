@@ -14,7 +14,7 @@ try { navCats = (await listCategories()).slice(0, 10); } catch { navCats = []; }
 ---
 <!DOCTYPE html>
 <html lang="pt-BR" class="bg-stone-50 text-stone-900">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="theme-color" content="#0c0a09"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta property="og:image" content="https://3de.focol.ai/icon-512.png"><meta name="twitter:card" content="summary"><title>{title}</title>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="theme-color" content="#0f1b2d"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta property="og:image" content="https://3de.focol.ai/icon-512.png"><meta name="twitter:card" content="summary"><title>{title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -28,10 +28,10 @@ try { navCats = (await listCategories()).slice(0, 10); } catch { navCats = []; }
 <input type="search" name="q" placeholder="Buscar peças..." aria-label="Buscar peças" class="h-10 w-full rounded-full border border-stone-200 bg-stone-50 px-4 text-sm">
 </form>
 <div class="flex flex-1 items-center justify-end gap-2">
-{uid && saldo !== null ? <a href="/conta" class="rounded-full bg-ember-700 px-4 py-2 font-mono text-sm font-bold text-white transition hover:bg-ember-800" title="Seu saldo — ver extrato">{saldo} créditos</a> : null}
+{uid && saldo !== null ? <a href="/conta" class="rounded-full bg-brand-600 px-4 py-2 font-mono text-sm font-bold text-white transition hover:bg-brand-700" title="Seu saldo — ver extrato">{saldo} créditos</a> : null}
 {uid ? <><a href="/conta" class="px-3 py-2 text-sm font-semibold uppercase hover:text-stone-600">Minha conta</a><a href="/loja" class="px-3 py-2 text-sm font-semibold uppercase hover:text-stone-600">Loja</a><form method="post" action="/api/logout" style="display:inline"><button type="submit" class="cursor-pointer px-3 py-2 text-sm font-semibold uppercase hover:text-stone-600">Sair</button></form></> : <><a href="/loja" class="px-3 py-2 text-sm font-semibold uppercase hover:text-stone-600">Loja</a><a href="/login" class="px-3 py-2 text-sm font-semibold uppercase hover:text-stone-600">Entrar</a></>}
 </div>
-{navCats.length ? <div class="hidden w-full overflow-x-auto border-t border-stone-100 md:block"><ul class="flex w-max gap-4 py-1.5 text-sm">{navCats.map((c) => (<li><a href={`/categoria/${c.slug}`} class="whitespace-nowrap text-stone-600 hover:text-ember-700 hover:underline">{c.name}</a></li>))}</ul></div> : null}
+{navCats.length ? <div class="hidden w-full overflow-x-auto border-t border-stone-100 md:block"><ul class="flex w-max gap-4 py-1.5 text-sm">{navCats.map((c) => (<li><a href={`/categoria/${c.slug}`} class="whitespace-nowrap text-stone-600 hover:text-brand-600 hover:underline">{c.name}</a></li>))}</ul></div> : null}
 </nav>
 </header>
 <slot />
@@ -44,15 +44,15 @@ try { navCats = (await listCategories()).slice(0, 10); } catch { navCats = []; }
 <div>
 <p class="text-xs font-bold uppercase tracking-widest text-stone-500">Explorar</p>
 <ul class="mt-2 flex flex-col gap-1.5">
-<li><a href="/busca" class="hover:text-ember-700 hover:underline">Buscar peças</a></li><li><a href="/loja" class="hover:text-ember-700 hover:underline">Loja</a></li>
-{navCats.slice(0, 5).map((c) => (<li><a href={`/categoria/${c.slug}`} class="hover:text-ember-700 hover:underline">{c.name}</a></li>))}
+<li><a href="/busca" class="hover:text-brand-600 hover:underline">Buscar peças</a></li><li><a href="/loja" class="hover:text-brand-600 hover:underline">Loja</a></li>
+{navCats.slice(0, 5).map((c) => (<li><a href={`/categoria/${c.slug}`} class="hover:text-brand-600 hover:underline">{c.name}</a></li>))}
 </ul>
 </div>
 <div>
 <p class="text-xs font-bold uppercase tracking-widest text-stone-500">Conta</p>
 <ul class="mt-2 flex flex-col gap-1.5">
-{uid ? <><li><a href="/conta" class="hover:text-ember-700 hover:underline">Minha conta e extrato</a></li></> : <li><a href="/login" class="hover:text-ember-700 hover:underline">Entrar</a></li>}
-<li><a href="/#como-funciona" class="hover:text-ember-700 hover:underline">Como funcionam os créditos</a></li>
+{uid ? <><li><a href="/conta" class="hover:text-brand-600 hover:underline">Minha conta e extrato</a></li></> : <li><a href="/login" class="hover:text-brand-600 hover:underline">Entrar</a></li>}
+<li><a href="/#como-funciona" class="hover:text-brand-600 hover:underline">Como funcionam os créditos</a></li>
 </ul>
 </div>
 </div>

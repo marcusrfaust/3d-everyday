@@ -1,14 +1,18 @@
 @import "tailwindcss";
 
-/* Identidade maker: display com caráter + ember (filamento) sobre carvão. */
+/* 3DE segue o design system do Dash 3D (decisão Marcus 04/11/26): primária
+   azul-marinho #1e3a5f, superfícies claras, acento céu no hero escuro.
+   Sem vermelho/ember na marca — vermelho só em erro semântico (destructive). */
 @theme {
   --font-display: "Bricolage Grotesque", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
-  --color-ember-600: #ea580c;
-  --color-ember-700: #c2410c;
-  --color-ember-800: #9a3412;
-  --color-coal-950: #0c0a09;
+  --color-brand-500: #3b6ea8;
+  --color-brand-600: #1e3a5f;
+  --color-brand-700: #162942;
+  --color-brand-800: #0f1b2d;
+  --color-accent-sky: #8fb3e0;
+  --color-coal-950: #0f1b2d;
 }
 
 body {
@@ -16,13 +20,13 @@ body {
   background-color: var(--color-stone-50, #fafaf9);
 }
 
-/* Hero: brasa sobre carvão + grade técnica sutil. */
+/* Hero: marinho profundo + brilho céu sutil + grade técnica. */
 .hero-mesh {
   background:
-    radial-gradient(at 18% 12%, rgb(194 65 12 / 0.5) 0px, transparent 55%),
-    radial-gradient(at 85% 88%, rgb(245 158 11 / 0.3) 0px, transparent 50%),
-    radial-gradient(at 70% 15%, rgb(154 52 18 / 0.4) 0px, transparent 45%),
-    #0c0a09;
+    radial-gradient(at 18% 12%, rgb(59 110 168 / 0.55) 0px, transparent 55%),
+    radial-gradient(at 85% 88%, rgb(56 189 248 / 0.22) 0px, transparent 50%),
+    radial-gradient(at 70% 15%, rgb(143 179 224 / 0.35) 0px, transparent 45%),
+    #0f1b2d;
 }
 .hero-grid {
   background-image:
@@ -43,7 +47,7 @@ body {
 .card-lift img { transition: transform 0.3s ease-out; }
 .card-lift:hover img { transform: scale(1.03); }
 
-:focus-visible { outline: 2px solid #c2410c; outline-offset: 2px; }
+:focus-visible { outline: 2px solid #1e3a5f; outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

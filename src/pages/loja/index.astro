@@ -25,7 +25,7 @@ const current = chosen ?? products.map((p) => priceInCurrency(p).price?.currency
 {products.map((p) => { const found = priceInCurrency(p, chosen ?? undefined); const pr = found.price; const exact = chosen ? found.exact : true; return (
 <a href={`/loja/${p.handle}`} class="group overflow-hidden rounded-xl border border-stone-200 bg-white transition hover:-translate-y-1 hover:shadow-lg">
 <div class="flex aspect-square items-center justify-center bg-stone-100">{p.thumbnail ? <img src={p.thumbnail} alt={p.title} class="h-full w-full object-cover" loading="lazy" /> : <span class="px-2 text-center text-xs text-stone-400">sem foto</span>}</div>
-<div class="p-3"><p class="truncate text-sm font-bold">{p.title}</p><p class="mt-1 font-mono text-sm font-bold text-ember-800">{pr ? formatMoney(pr.amount, pr.currency_code) : 'preço sob consulta'}</p>{pr && !exact ? <p class="text-xs text-stone-500">em {pr.currency_code.toUpperCase()}</p> : null}</div>
+<div class="p-3"><p class="truncate text-sm font-bold">{p.title}</p><p class="mt-1 font-mono text-sm font-bold text-brand-700">{pr ? formatMoney(pr.amount, pr.currency_code) : 'preço sob consulta'}</p>{pr && !exact ? <p class="text-xs text-stone-500">em {pr.currency_code.toUpperCase()}</p> : null}</div>
 </a>); })}
 </div>
 </main>
