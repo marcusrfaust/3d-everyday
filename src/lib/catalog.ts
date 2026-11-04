@@ -3,6 +3,8 @@
 // Teto de 100 peças por consulta — nada de carregar tudo.
 // Troca futura p/ base nova = 1 var no .env (D1_DATABASE_ID), sem mudar código.
 import { d1query } from './d1';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { acctQuery } from './acctdb';
 import { priceRule } from './plans';
 export interface CatalogItem {id: number;name: string;category: string | null;categoryName: string | null;photoId: number | null;price: number;}
@@ -15,6 +17,16 @@ const COM_ARQUIVO = `EXISTS (SELECT 1 FROM files d WHERE d.item_id = i.id AND d.
 // foto só-Drive cairia no placeholder — por isso COM_FOTO exige local_path.
 // Placeholder do ModelCard é só rede de segurança.
 export const COM_FOTO = `EXISTS (SELECT 1 FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' AND f.local_path IS NOT NULL AND f.local_path <> '')`;
+const CACHE_DIR = resolve(process.env.HOME ?? '/home/altas', '3dlib-cache');
+// O thumb só serve arquivo local dentro do cache: foto com local_path cujo
+// arquivo sumiu do disco cairia no placeholder SVG. Verificação server-side
+// (lista já é ≤100 linhas) — sem arquivo servível, sem card/capa.
+export function fotoServivel(localPath: unknown): boolean {
+  const lp = String(localPath ?? '');
+  if (!lp) return false;
+  const r = resolve(lp);
+  return (r === CACHE_DIR || r.startsWith(CACHE_DIR + '/')) && existsSync(r);
+}
 // Limpa nome de arquivo/título: tira extensões (mesmo duplas, "..zip"), troca
 // separadores por espaço, remove rabo de ingestão (data + sufixo de lote:
 // "...3mf20260908_1_ru") e tokens soltos de formato no meio do nome.
@@ -42,11 +54,13 @@ export async function listRecent(limit = 24): Promise<CatalogItem[]> {
   const rows = await d1query(
     `SELECT i.id AS id, i.name AS name, c.slug AS category, c.name AS category_name,
       (SELECT f.id FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' AND f.local_path IS NOT NULL AND f.local_path <> '' ORDER BY f.id DESC LIMIT 1) AS photoId,
+      (SELECT f.local_path FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' AND f.local_path IS NOT NULL AND f.local_path <> '' ORDER BY f.id DESC LIMIT 1) AS photoLp,
       (SELECT f2.file_name FROM files f2 WHERE f2.item_id = i.id AND f2.kind = 'document' ORDER BY f2.id ASC LIMIT 1) AS fileName,
       (SELECT COALESCE(SUM(f3.size_bytes),0) FROM files f3 WHERE f3.item_id = i.id AND f3.kind = 'document') AS totalBytes
      FROM items i LEFT JOIN categories c ON c.id = i.category_id WHERE ${BASE} AND ${COM_ARQUIVO} AND ${COM_FOTO} ORDER BY i.created_at DESC LIMIT ?`, [n]);
   const overs = n ? await priceOverrides(rows.map((r) => Number(r.id))) : new Map<number, number>();
-  return rows.map((r) => {
+  // Garantia final: só anuncia o que o thumb serve (arquivo existe no cache).
+  return rows.filter((r) => fotoServivel(r.photoLp)).map((r) => {
     const id = Number(r.id);
     return {id, name: displayName(String(r.name ?? ''), r.fileName == null ? null : String(r.fileName)), category: r.category == null ? null : String(r.category), categoryName: r.category_name == null ? null : String(r.category_name), photoId: r.photoId == null ? null : Number(r.photoId), price: overs.get(id) ?? priceRule(Number(r.totalBytes ?? 0))};
   });

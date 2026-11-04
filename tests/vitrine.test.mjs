@@ -30,3 +30,11 @@ test('ModelCard mantém fallback só como rede de segurança', () => {
   const card = readFileSync(path.join(root, 'src/components/ModelCard.astro'), 'utf8');
   assert.ok(card.includes('Sem foto'), 'fallback defensivo deve existir');
 });
+
+test('fotoServivel exige arquivo local dentro do cache (thumb nunca placeholder)', () => {
+  assert.ok(catalog.includes('fotoServivel'), 'catalog.ts deve exportar fotoServivel');
+  assert.ok(catalog.includes('existsSync'), 'fotoServivel verifica o disco');
+  assert.ok(catalog.includes('3dlib-cache'), 'fotoServivel mira o cache do thumb');
+  assert.ok(catalog.includes('filter((r) => fotoServivel(r.photoLp))'), 'listRecent descarta sem arquivo servível');
+  assert.ok(facets.includes('fotoServivel(r.photoLp)'), 'facets descarta/capa sem arquivo servível');
+});
