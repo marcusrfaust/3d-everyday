@@ -75,5 +75,33 @@ cd ~/apps/3d-everyday && npm run check   # 0 errors</pre>
 npm test  # 13 pass
 # com .env preenchido:
 npm run dev  # http://localhost:4322 (porta própria, sem colidir com 3d-lib :4321)</pre>
+<h2>Home-v2 — paginação + loja catálogo em créditos (2026-11-04, branch <code>feat/3de-home-v2</code>)</h2>
+<h3>Resumo</h3>
+<p>Pedido Marcus: home era básica, busca sem páginas, loja com merch demo em dinheiro, Medusa sem uso para STL, nada do yoshstudios aplicado. Entrega: <strong>paginação</strong> em <code>/busca</code> e <code>/categoria</code> (COUNT + <code>?pagina=</code> + nav com <code>rel=prev/next</code>); <strong>loja oficial = catálogo STL/3MF com preço em créditos</strong> (merch demo segue no Medusa, só não é anunciado — nada apagado); home com barra de anúncio + ver-tudo nas coleções. Testes 28/28, check 0, build ok.</p>
+<h3>Decisões de Arquitetura</h3>
+<ul>
+<li><code>src/lib/pagination.ts</code> (puro): <code>clampPage/totalPages/pageOffset/buildPageUrl</code> — <code>pagina=1</code> omitido (URL canônica), filtros preservados.</li>
+<li><code>facets.searchItems</code> ganha <code>page/perPage</code> → <code>LIMIT ? OFFSET ?</code> (sem <code>page</code>, igual a antes); novo <code>countItems</code> com os mesmos conds para o total.</li>
+<li>Loja lê <code>searchItems</code> (peça real + <code>price</code> em créditos + link <code>/modelo</code>). Medusa segue como checkout (<code>/loja/[handle]</code>, carrinho, APIs intactos); migração produto-a-produto Medusa↔<code>item_id</code> fica como próxima fase — sem delete sem OK do Marcus (irreversível).</li>
+<li>Yosh aplicados sem réplica: Shop by Collection (ver-tudo), New Arrivals (carousel + grade), barra de anúncio, breadcrumb/preço/formato já existiam no detalhe.</li>
+</ul>
+<h3>Arquivos Criados/Alterados</h3>
+<ul>
+<li><code>src/lib/pagination.ts</code> (novo) + <code>tests/_pagination.mjs</code> (bundle).</li>
+<li><code>src/lib/facets.ts</code> — page/perPage/OFFSET + <code>countItems</code>.</li>
+<li><code>src/pages/busca.astro</code>, <code>src/pages/categoria/[slug].astro</code> — nav de páginas.</li>
+<li><code>src/pages/loja/index.astro</code> — grade do catálogo em créditos.</li>
+<li><code>src/components/CategorySection.astro</code> — ver-tudo; <code>src/pages/index.astro</code> — anúncio.</li>
+<li><code>tests/paginacao.test.mjs</code> (7), <code>tests/loja.test.mjs</code> (3).</li>
+</ul>
+<h3>Como o Medusa entra no sistema</h3>
+<p>Hoje: catálogo (D1 readonly) → vitrine/busca/modelo → download debita créditos (ledger). Medusa (127.0.0.1:9000, 6 regiões/95 países) = checkout oficial futuro: cada <code>StoreProduct</code> espelha um <code>item_id</code> (via <code>metadata</code>), preço = créditos, e o <code>completeCart</code> vira baixa no ledger em vez de cobrança. Admin local: <code>http://127.0.0.1:9000/app/</code> via RustDesk. Passo seguinte: seed curado (20–50 peças) + <code>metadata.item_id</code> + exibir créditos no detalhe Medusa.</p>
+<h3>Pendências/Riscos (atualizado)</h3>
+<ul>
+<li>Seed Medusa com STL reais + <code>metadata.item_id</code> (próxima fase; delete do merch demo só com OK — irreversível).</li>
+<li>Cache <code>~/3dlib-cache</code> com 5 arquivos: vitrine rigorosa esvazia grades; re-sincronizar.</li>
+<li><code>tax_backfill.py</code> nunca executado; lote2 taxonomy staged no 3d-lib.</li>
+<li>Contagem SQL vs filtro de disco pode divergir com cache incompleto (documentado, degradê honesto).</li>
+</ul>
 </body>
 </html>

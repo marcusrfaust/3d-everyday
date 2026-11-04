@@ -8,7 +8,7 @@ let cats: Awaited<ReturnType<typeof listCategories>> = [];
 try { cats = await listCategories(); } catch { cats = []; }
 ---
 <section aria-label={heading}>
-<SectionHeader eyebrow="Navegue" title={heading} />
+<SectionHeader eyebrow="Navegue" title={heading} linkHref="/busca" linkLabel="Ver tudo →" />
 <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 {cats.map((c) => (<CategoryCard name={c.name} slug={c.slug} count={c.count} photoId={c.photoId} />))}
 </div>

@@ -22,14 +22,18 @@ export async function listTags(limit = 40): Promise<Facet[]> {
      WHERE ${BASE} AND ${COM_ARQUIVO} AND ${COM_FOTO} GROUP BY t.tag ORDER BY n DESC LIMIT ?`, [Math.min(limit, DEV_SAMPLE_LIMIT)]);
   return rows.map((r) => ({slug: String(r.slug), name: String(r.slug), count: Number(r.n)}));
 }
-export async function searchItems(opts: {q?: string;category?: string;tag?: string;limit?: number}): Promise<CatalogItem[]> {
+export async function searchItems(opts: {q?: string;category?: string;tag?: string;limit?: number;page?: number;perPage?: number}): Promise<CatalogItem[]> {
   const conds = [BASE, COM_ARQUIVO, COM_FOTO];
   const params: unknown[] = [];
   if (opts.category) { conds.push(`c.slug = ?`); params.push(opts.category); }
   if (opts.tag) { conds.push(`EXISTS (SELECT 1 FROM item_tags t WHERE t.item_id = i.id AND t.tag = ?)`); params.push(opts.tag); }
   if (opts.q) { conds.push(`i.name LIKE ?`); params.push(`%${opts.q}%`); }
-  const n = Math.min(opts.limit ?? 24, DEV_SAMPLE_LIMIT);
-  params.push(n);
+  // Paginação (Marcus 04/11/26): ?pagina= na busca/categoria. Sem page (chamada
+  // antiga), comporta-se como antes: primeiras `limit` peças.
+  const perPage = Math.min(opts.perPage ?? opts.limit ?? 24, DEV_SAMPLE_LIMIT);
+  const page = Math.max(1, Math.floor(Number(opts.page ?? 1) || 1));
+  const offset = (page - 1) * perPage;
+  params.push(perPage, offset);
   const rows = await d1query(
     `SELECT i.id AS id, i.name AS name, c.slug AS category, c.name AS category_name,
       (SELECT f.id FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' AND f.local_path IS NOT NULL AND f.local_path <> '' ORDER BY f.id DESC LIMIT 1) AS photoId,
@@ -37,11 +41,25 @@ export async function searchItems(opts: {q?: string;category?: string;tag?: stri
       (SELECT f2.file_name FROM files f2 WHERE f2.item_id = i.id AND f2.kind = 'document' ORDER BY f2.id ASC LIMIT 1) AS fileName,
       (SELECT COALESCE(SUM(f3.size_bytes),0) FROM files f3 WHERE f3.item_id = i.id AND f3.kind = 'document') AS totalBytes
      FROM items i LEFT JOIN categories c ON c.id = i.category_id
-     WHERE ${conds.join(' AND ')} ORDER BY i.created_at DESC LIMIT ?`, params);
+     WHERE ${conds.join(' AND ')} ORDER BY i.created_at DESC LIMIT ? OFFSET ?`, params);
   const overs = rows.length ? await priceOverrides(rows.map((r) => Number(r.id))) : new Map<number, number>();
   // Garantia final: só anuncia o que o thumb serve (arquivo existe no cache).
   return rows.filter((r) => fotoServivel(r.photoLp)).map((r) => {
     const id = Number(r.id);
     return {id, name: displayName(String(r.name ?? ''), r.fileName == null ? null : String(r.fileName)), category: r.category == null ? null : String(r.category), categoryName: r.category_name == null ? null : String(r.category_name), photoId: r.photoId == null ? null : Number(r.photoId), price: overs.get(id) ?? priceRule(Number(r.totalBytes ?? 0))};
   });
+}
+
+// Total de peças do filtro (para a navegação de páginas). Mesmos conds da
+// busca; o descarte de foto sumida do disco é pós-filtro (última página pode
+// vir mais curta quando o cache está incompleto — degradê honesto).
+export async function countItems(opts: {q?: string;category?: string;tag?: string}): Promise<number> {
+  const conds = [BASE, COM_ARQUIVO, COM_FOTO];
+  const params: unknown[] = [];
+  if (opts.category) { conds.push(`c.slug = ?`); params.push(opts.category); }
+  if (opts.tag) { conds.push(`EXISTS (SELECT 1 FROM item_tags t WHERE t.item_id = i.id AND t.tag = ?)`); params.push(opts.tag); }
+  if (opts.q) { conds.push(`i.name LIKE ?`); params.push(`%${opts.q}%`); }
+  const rows = await d1query(
+    `SELECT COUNT(*) AS n FROM items i LEFT JOIN categories c ON c.id = i.category_id WHERE ${conds.join(' AND ')}`, params);
+  return Number(rows[0]?.n ?? 0);
 }

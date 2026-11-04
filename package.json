@@ -8,8 +8,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "build:test": "esbuild src/lib/plans.ts --bundle --format=esm --outfile=tests/_plans.mjs --log-level=error && esbuild src/lib/medusa.ts --bundle --format=esm --outfile=tests/_medusa.mjs --log-level=error --define:import.meta.env.MEDUSA_URL='\"http://127.0.0.1:9000\"' --define:import.meta.env.MEDUSA_PUBLISHABLE_KEY='\"\"'",
-    "test": "npm run build:test && node --test tests/credits.test.mjs tests/medusa.test.mjs tests/vitrine.test.mjs"
+    "build:test": "esbuild src/lib/plans.ts --bundle --format=esm --outfile=tests/_plans.mjs --log-level=error && esbuild src/lib/medusa.ts --bundle --format=esm --outfile=tests/_medusa.mjs --log-level=error --define:import.meta.env.MEDUSA_URL='\"http://127.0.0.1:9000\"' --define:import.meta.env.MEDUSA_PUBLISHABLE_KEY='\"\"' && esbuild src/lib/pagination.ts --bundle --format=esm --outfile=tests/_pagination.mjs --log-level=error",
+    "test": "npm run build:test && node --test tests/credits.test.mjs tests/medusa.test.mjs tests/vitrine.test.mjs tests/paginacao.test.mjs tests/loja.test.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.5",
