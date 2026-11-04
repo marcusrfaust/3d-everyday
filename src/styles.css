@@ -48,6 +48,8 @@ body {
 .card-lift:hover img { transform: scale(1.03); }
 
 :focus-visible { outline: 2px solid #1e3a5f; outline-offset: 2px; }
+/* Sobre o hero escuro o anel marinho some — usa céu/branco p/ contraste. */
+.hero-mesh :focus-visible { outline-color: #8fb3e0; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

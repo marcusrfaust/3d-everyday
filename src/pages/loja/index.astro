@@ -19,7 +19,7 @@ const current = chosen ?? products.map((p) => priceInCurrency(p).price?.currency
 <SectionHeader eyebrow="Catálogo" title="Loja" />
 <p class="mt-2 text-sm text-stone-500">Produtos do backend Medusa — pagamento e catálogo final em configuração.</p>
 <div class="mt-4 flex items-center justify-end"><CurrencySelector current={current} next="/loja" /></div>
-{lojaErro ? <p class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">Loja indisponível no momento ({lojaErro}). Tente novamente em instantes.</p> : null}
+{lojaErro ? <p class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">Loja indisponível no momento ({lojaErro}). Tente novamente em instantes.</p> : null}
 {!lojaErro && !products.length ? <p class="text-sm text-stone-500">Nenhum produto publicado no momento.</p> : null}
 <div class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
 {products.map((p) => { const found = priceInCurrency(p, chosen ?? undefined); const pr = found.price; const exact = chosen ? found.exact : true; return (

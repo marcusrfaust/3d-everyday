@@ -9,7 +9,7 @@ export interface Facet {slug: string;name: string;count: number;photoId?: number
 export async function listCategories(): Promise<Facet[]> {
   const rows = await d1query(
     `SELECT c.slug AS slug, c.name AS name, COUNT(*) AS n,
-      (SELECT f.id FROM files f JOIN items i2 ON i2.id = f.item_id WHERE i2.category_id = c.id AND i2.status IN ('reposted','captured') AND i2.is_adult = 0 AND f.kind = 'photo' AND (f.local_path IS NOT NULL AND f.local_path <> '' OR f.drive_url LIKE 'https://drive.google.com/%') ORDER BY f.id DESC LIMIT 1) AS photoId
+      (SELECT f.id FROM files f JOIN items i2 ON i2.id = f.item_id WHERE i2.category_id = c.id AND i2.status IN ('reposted','captured') AND i2.is_adult = 0 AND f.kind = 'photo' AND f.local_path IS NOT NULL AND f.local_path <> '' AND EXISTS (SELECT 1 FROM files d WHERE d.item_id = i2.id AND d.kind = 'document' AND d.drive_url LIKE 'https://drive.google.com/%') ORDER BY f.id DESC LIMIT 1) AS photoId
      FROM items i JOIN categories c ON c.id = i.category_id
      WHERE ${BASE} AND ${COM_ARQUIVO} AND ${COM_FOTO} GROUP BY c.slug, c.name ORDER BY n DESC LIMIT ${DEV_SAMPLE_LIMIT}`, []);
   return rows.map((r) => ({slug: String(r.slug), name: String(r.name ?? r.slug), count: Number(r.n), photoId: r.photoId == null ? null : Number(r.photoId)}));
@@ -30,7 +30,7 @@ export async function searchItems(opts: {q?: string;category?: string;tag?: stri
   params.push(n);
   const rows = await d1query(
     `SELECT i.id AS id, i.name AS name, c.slug AS category, c.name AS category_name,
-      (SELECT f.id FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' AND (f.local_path IS NOT NULL AND f.local_path <> '' OR f.drive_url LIKE 'https://drive.google.com/%') ORDER BY f.id DESC LIMIT 1) AS photoId,
+      (SELECT f.id FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' AND f.local_path IS NOT NULL AND f.local_path <> '' ORDER BY f.id DESC LIMIT 1) AS photoId,
       (SELECT f2.file_name FROM files f2 WHERE f2.item_id = i.id AND f2.kind = 'document' ORDER BY f2.id ASC LIMIT 1) AS fileName,
       (SELECT COALESCE(SUM(f3.size_bytes),0) FROM files f3 WHERE f3.item_id = i.id AND f3.kind = 'document') AS totalBytes
      FROM items i LEFT JOIN categories c ON c.id = i.category_id

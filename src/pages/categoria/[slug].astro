@@ -22,7 +22,7 @@ const atual = cats.find((c) => c.slug === slug);
 <div class="min-w-0 flex-1">
 <p class="text-xs font-bold uppercase tracking-widest text-brand-600">Categoria</p>
 <h1 class="mt-1 font-display text-2xl font-extrabold tracking-tight md:text-3xl">{atual?.name ?? 'Categoria'}</h1>
-{erro ? <p class="mt-2 text-sm text-red-700">Categoria indisponível ({erro}).</p> : <>
+{erro ? <p class="mt-2 text-sm text-red-700" role="alert">Categoria indisponível ({erro}).</p> : <>
 <p class="mt-1 font-mono text-sm text-stone-500">{items.length} peças.</p>
 <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 {items.map((it, idx) => (<ModelCard item={it} eager={idx === 0} />))}
