@@ -1,5 +1,5 @@
 ---
-// Cartão de categoria: capa real + nome display + contagem mono + link ember.
+// Cartão de categoria: capa real + nome display + contagem mono + link na cor da marca.
 interface Props {name: string; slug: string; count: number; photoId?: number | null;}
 const {name, slug, count, photoId} = Astro.props;
 const inicial = (name ?? '?').trim().slice(0, 1).toUpperCase();
@@ -9,12 +9,12 @@ const inicial = (name ?? '?').trim().slice(0, 1).toUpperCase();
 <article class="flex flex-col items-start gap-3 p-4">
 {photoId != null
 ? <img src={`/api/thumb/${photoId}`} alt="" loading="lazy" class="aspect-[16/10] w-full rounded-lg object-cover" />
-: <div class="flex aspect-[16/10] w-full items-center justify-center rounded-lg bg-ember-700/10" aria-hidden="true"><span class="font-display text-5xl font-extrabold text-ember-700">{inicial}</span></div>}
+: <div class="flex aspect-[16/10] w-full items-center justify-center rounded-lg bg-brand-600/10" aria-hidden="true"><span class="font-display text-5xl font-extrabold text-brand-600">{inicial}</span></div>}
 <div class="flex w-full flex-wrap items-baseline justify-between gap-2">
 <p class="font-display text-xl font-extrabold tracking-tight text-stone-900">{name}</p>
 <p class="font-mono text-xs text-stone-500">{count} {count === 1 ? 'peça' : 'peças'}</p>
 </div>
-<p class="text-sm font-semibold text-ember-700">Ver peças →</p>
+<p class="text-sm font-semibold text-brand-600">Ver peças →</p>
 </article>
 </a>
 </div>
