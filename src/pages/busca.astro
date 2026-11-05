@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import ModelCard from '../components/ModelCard.astro';
 import { searchItems, countItems, listCategories, listTags } from '../lib/facets';
 import { groupFacets } from '../lib/taggroups';
-import { PER_PAGE_PADRAO, totalPages, clampPage, buildPageUrl } from '../lib/pagination';
+import { PER_PAGE_PADRAO, totalPages, clampPage, pageWindow, buildPageUrl } from '../lib/pagination';
 export const prerender = false;
 const q = (Astro.url.searchParams.get('q') ?? '').trim();
 const category = (Astro.url.searchParams.get('categoria') ?? '').trim();
@@ -23,11 +23,8 @@ try {
 } catch (e) { erro = e instanceof Error ? e.message : 'falha na busca'; }
 const pages = totalPages(total, perPage);
 const page = clampPage(paginaPedida, pages);
-// Janela de páginas: 1 … atual±2 … última.
-const win: number[] = [];
-for (let p = 1; p <= pages; p++) {
-  if (p === 1 || p === pages || Math.abs(p - page) <= 2) win.push(p);
-}
+// Janela de páginas: fonte única em pagination.ts (C2).
+const win = pageWindow(pages, page);
 const filtros = {q, categoria: category, tag};
 const urlPagina = (p: number) => buildPageUrl('/busca', filtros, p);
 ---

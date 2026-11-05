@@ -14,7 +14,7 @@ try { items = await searchItems({page: 1, perPage: 24}); } catch (e) { lojaErro 
 <Layout title="Loja — 3d-Everyday">
 <main class="mx-auto w-full max-w-6xl px-4 py-8">
 <SectionHeader eyebrow="Catálogo oficial" title="Loja" linkHref="/busca" linkLabel="Ver tudo →" />
-<p class="mt-2 text-sm text-stone-500">Projetos STL e 3MF do acervo — preço em créditos do seu plano. O download debita da carteira na hora.</p>
+<p class="mt-2 text-sm text-stone-500">Projetos STL e 3MF do acervo — preço em créditos do seu plano. O download debita da carteira na hora. Sem saldo? <a href="/loja/creditos" class="font-semibold text-brand-600 hover:underline">Comprar créditos avulsos</a>.</p>
 {lojaErro ? <p class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">Loja indisponível no momento ({lojaErro}). Tente novamente em instantes.</p> : null}
 {!lojaErro && !items.length ? <p class="mt-4 text-sm text-stone-500">Nenhum projeto publicado no momento.</p> : null}
 <div class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">

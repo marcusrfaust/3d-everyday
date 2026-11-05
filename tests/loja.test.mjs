@@ -26,3 +26,25 @@ test('checkout Medusa preservado nas rotas de detalhe (sem delete)', () => {
   const detalhe = readFileSync(path.join(root, 'src/pages/loja/[handle].astro'), 'utf8');
   assert.ok(detalhe.includes('getProduct'), 'detalhe Medusa intacto');
 });
+
+test('créditos avulsos: grade só de pacotes (C3), detalhe com ramos pacote/demo', () => {
+  const cred = readFileSync(path.join(root, 'src/pages/loja/creditos.astro'), 'utf8');
+  assert.ok(cred.includes('listCreditPacks'), 'grade usa listCreditPacks');
+  assert.ok(!cred.includes('Modelo') && !cred.includes('/modelo/'), 'grade de pacotes não mistura peças');
+  assert.ok(cred.includes('créditos'), 'pacote anuncia créditos');
+  const detalhe = readFileSync(path.join(root, 'src/pages/loja/[handle].astro'), 'utf8');
+  assert.ok(detalhe.includes('creditPackOf'), 'detalhe distingue pacote de demo');
+  assert.ok(detalhe.includes('demonstração'), 'demo fora do catálogo é sinalizado honestamente');
+  assert.ok(detalhe.includes('/loja/creditos'), 'breadcrumb leva a créditos');
+});
+
+test('creditPurchase: idempotente por pedido, valida entradas (C3)', () => {
+  const c = readFileSync(path.join(root, 'src/lib/credits.ts'), 'utf8');
+  assert.ok(c.includes('creditPurchase'), 'credits.ts exporta creditPurchase');
+  assert.ok(c.includes('compra_avulsa'), 'reason próprio, sem colidir com grant/download');
+  assert.ok(c.includes('INSERT OR IGNORE'), 'idempotente (retry não credita 2x)');
+  assert.ok(c.includes('order_ref'), 'amarrado ao pedido Medusa');
+  const m = readFileSync(path.join(root, 'migrations/0003_compra_avulsa.sql'), 'utf8');
+  assert.ok(m.includes('idx_ledger_compra'), 'UNIQUE parcial garante 1 crédito por pedido');
+  assert.ok(m.includes('IF NOT EXISTS') || m.includes('IF NOT EXIST'), 'migration aditiva e segura');
+});

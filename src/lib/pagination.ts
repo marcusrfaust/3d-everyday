@@ -26,6 +26,25 @@ export function pageOffset(page: number, perPage: number): number {
   return (Math.max(1, page) - 1) * Math.max(1, perPage);
 }
 
+export function normalizePage(v: unknown): number {
+  const n = Math.floor(Number(v));
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return n;
+}
+
+// Janela de páginas p/ a nav: 1 … atual±radius … última. Fonte única (C2) —
+// busca.astro e categoria/[slug].astro usam esta função, nunca loop próprio.
+export function pageWindow(pages: number, current: number, radius = 2): number[] {
+  const last = Math.max(1, Math.floor(Number(pages) || 1));
+  const cur = Math.min(Math.max(1, Math.floor(Number(current) || 1)), last);
+  const r = Math.max(0, Math.floor(Number(radius) || 0));
+  const win: number[] = [];
+  for (let p = 1; p <= last; p++) {
+    if (p === 1 || p === last || Math.abs(p - cur) <= r) win.push(p);
+  }
+  return win;
+}
+
 // Monta URL de página preservando filtros. pagina=1 é omitido (canônica).
 export function buildPageUrl(path: string, params: Record<string, string>, page: number): string {
   const q = new URLSearchParams();

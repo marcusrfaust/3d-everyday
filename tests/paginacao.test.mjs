@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { PER_PAGE_PADRAO, clampPage, clampPerPage, totalPages, pageOffset, buildPageUrl } from './_pagination.mjs';
+import { PER_PAGE_PADRAO, clampPage, clampPerPage, normalizePage, totalPages, pageOffset, pageWindow, buildPageUrl } from './_pagination.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const read = (p) => readFileSync(path.join(root, p), 'utf8');
@@ -34,6 +34,29 @@ test('clampPerPage usa padrão quando inválido e respeita teto', () => {
 test('pageOffset: página 1 começa em 0', () => {
   assert.equal(pageOffset(1, 24), 0);
   assert.equal(pageOffset(3, 24), 48);
+});
+
+test('normalizePage limita só o piso (>=1); teto é das páginas (C2)', () => {
+  assert.equal(normalizePage(3), 3);
+  assert.equal(normalizePage(0), 1);
+  assert.equal(normalizePage(-5), 1);
+  assert.equal(normalizePage('x'), 1);
+  assert.equal(normalizePage(999), 999);
+});
+
+test('pageWindow: 1 … atual±2 … última (C2, fonte única)', () => {
+  assert.deepEqual(pageWindow(1, 1), [1]);
+  assert.deepEqual(pageWindow(5, 1), [1, 2, 3, 5]);
+  assert.deepEqual(pageWindow(10, 5), [1, 3, 4, 5, 6, 7, 10]);
+  assert.deepEqual(pageWindow(10, 10), [1, 8, 9, 10]);
+});
+
+test('busca e categoria usam pageWindow (sem loop próprio)', () => {
+  for (const p of ['src/pages/busca.astro', 'src/pages/categoria/[slug].astro']) {
+    const s = read(p);
+    assert.ok(s.includes('pageWindow'), `${p} usa pageWindow`);
+    assert.ok(!s.includes('Math.abs(p - page)'), `${p} sem janela inline`);
+  }
 });
 
 test('buildPageUrl preserva filtros e omite pagina=1', () => {

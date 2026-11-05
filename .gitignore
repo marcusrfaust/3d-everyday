@@ -4,3 +4,4 @@ dist/
 .env
 tests/_plans.mjs
 tests/_medusa.mjs
+tests/_pagination.mjs

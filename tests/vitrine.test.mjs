@@ -15,15 +15,19 @@ test('catalog exporta COM_FOTO exigindo files.kind photo com arquivo real', () =
   assert.ok(catalog.includes("f.kind = 'photo'"), 'COM_FOTO deve exigir kind photo');
 });
 
-test('listRecent filtra sem foto (sem anúncio sem imagem)', () => {
-  assert.ok(catalog.includes('AND ${COM_FOTO}'), 'listRecent WHERE deve incluir COM_FOTO');
+test('listRecent filtra sem foto via fonte única (C1: catalogWhere)', () => {
+  assert.ok(catalog.includes('catalogWhere'), 'catalog.ts deve exportar catalogWhere');
+  assert.ok(catalog.includes('WHERE ${catalogWhere()}'), 'listRecent WHERE usa a fonte única');
 });
 
-test('facetas e busca usam o mesmo filtro de foto', () => {
-  assert.ok(facets.includes('COM_FOTO'), 'facets.ts deve importar/usar COM_FOTO');
-  const usos = facets.match(/COM_FOTO/g) ?? [];
-  // import + listCategories + listTags + searchItems(cond) = 4+
-  assert.ok(usos.length >= 4, `esperava 4+ usos de COM_FOTO, achei ${usos.length}`);
+test('facetas e busca usam o mesmo filtro de foto via fonte única (C1)', () => {
+  assert.ok(!/const BASE =/.test(facets), 'facets.ts não redefine BASE (fonte única em catalog.ts)');
+  assert.ok(!/const COM_ARQUIVO =/.test(facets), 'facets.ts não redefine COM_ARQUIVO');
+  assert.ok(facets.includes('catalogWhere'), 'facets.ts importa/usa catalogWhere');
+  const usos = facets.match(/catalogWhere\(/g) ?? [];
+  // import + listCategories(2: capa+WHERE) + listTags + searchItems + countItems = 5+
+  assert.ok(usos.length >= 5, `esperava 5+ usos de catalogWhere, achei ${usos.length}`);
+  assert.ok(facets.includes('photoIdSub') && facets.includes('photoLpSub'), 'facets usa subselects de foto da fonte única');
 });
 
 test('ModelCard mantém fallback só como rede de segurança', () => {

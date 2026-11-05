@@ -3,7 +3,7 @@
 // Nenhuma leitura de env no top-level: seguro p/ bundle de teste (node --test).
 export interface StorePrice { amount: number; currency_code: string; }
 export interface StoreVariant { id: string; title: string | null; prices?: StorePrice[]; }
-export interface StoreProduct { id: string; title: string; handle: string; thumbnail: string | null; variants?: StoreVariant[]; }
+export interface StoreProduct { id: string; title: string; handle: string; thumbnail: string | null; metadata?: Record<string, unknown> | null; variants?: StoreVariant[]; }
 export interface CartLine { id: string; title: string; variant_id?: string; quantity: number; unit_price: number; thumbnail?: string | null; }
 export interface StoreCart { id: string; region_id?: string; currency_code: string; items: CartLine[]; total: number; }
 function base(): string { return (import.meta.env.MEDUSA_URL ?? 'http://127.0.0.1:9000').replace(/\/+$/, ''); }
@@ -59,23 +59,46 @@ export async function resolveRegionId(currency?: unknown): Promise<string> {
   return regions[0].id;
 }
 export async function listProducts(limit = 24): Promise<StoreProduct[]> {
-  const d = await store(`/store/products?limit=${Math.min(limit, 100)}&fields=id,title,handle,thumbnail,*variants.prices`);
+  const d = await store(`/store/products?limit=${Math.min(limit, 100)}&fields=id,title,handle,thumbnail,metadata,*variants.prices`);
   return (d.products ?? []).map((p: any) => ({
     id: String(p.id), title: String(p.title ?? 'Produto sem título'), handle: String(p.handle ?? p.id),
     thumbnail: p.thumbnail == null ? null : String(p.thumbnail),
+    metadata: (p.metadata != null && typeof p.metadata === 'object' ? p.metadata as Record<string, unknown> : null),
     variants: (p.variants ?? []).map((v: any) => ({ id: String(v.id), title: v.title == null ? null : String(v.title), prices: (v.prices ?? []).map((x: any) => ({ amount: Number(x.amount ?? 0), currency_code: String(x.currency_code ?? '').toLowerCase() })) })),
   }));
 }
 export async function getProduct(handle: string): Promise<StoreProduct | null> {
-  const d = await store(`/store/products?handle=${encodeURIComponent(handle)}&fields=id,title,handle,thumbnail,description,*variants.prices`);
+  // Lookup direto (sem N+1): 1 round-trip. metadata vem junto (C3: pacote = credits).
+  const d = await store(`/store/products?handle=${encodeURIComponent(handle)}&fields=id,title,handle,thumbnail,metadata,description,*variants.prices`);
   const p = (d.products ?? [])[0];
   if (!p) return null;
-  const list = await listProducts(100).catch(() => []);
-  return list.find((x) => x.handle === String(p.handle ?? '')) ?? {
+  return {
     id: String(p.id), title: String(p.title ?? ''), handle: String(p.handle ?? handle),
     thumbnail: p.thumbnail == null ? null : String(p.thumbnail),
+    metadata: (p.metadata != null && typeof p.metadata === 'object' ? p.metadata as Record<string, unknown> : null),
     variants: (p.variants ?? []).map((v: any) => ({ id: String(v.id), title: v.title == null ? null : String(v.title), prices: (v.prices ?? []).map((x: any) => ({ amount: Number(x.amount ?? 0), currency_code: String(x.currency_code ?? '').toLowerCase() })) })),
   };
+}
+
+// ---- Créditos avulsos (C3/C4, decisão Marcus 04/11/26) ----
+// Peça (STL/3MF) custa créditos; dinheiro só compra PACOTE de créditos no Medusa.
+// Pacote = produto Medusa com metadata.credits = quantidade (inteiro > 0).
+// Sem metadata.credits válido, não é pacote (nunca deduzir do título).
+export function creditPackOf(p: StoreProduct): number | null {
+  const raw = p.metadata?.credits;
+  const n = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+// Só pacotes entram na grade de créditos avulsos (demo/merch sem metadata fica fora).
+export async function listCreditPacks(limit = 24): Promise<Array<{ pack: StoreProduct; credits: number }>> {
+  const all = await listProducts(Math.min(Math.max(1, limit * 2), 100));
+  const packs: Array<{ pack: StoreProduct; credits: number }> = [];
+  for (const p of all) {
+    const c = creditPackOf(p);
+    if (c != null) packs.push({ pack: p, credits: c });
+    if (packs.length >= limit) break;
+  }
+  return packs;
 }
 export async function createCart(regionId: string): Promise<StoreCart> {
   const d = await store('/store/carts', { method: 'POST', body: JSON.stringify({ region_id: regionId }) });

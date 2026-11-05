@@ -103,5 +103,26 @@ npm run dev  # http://localhost:4322 (porta própria, sem colidir com 3d-lib :43
 <li><code>tax_backfill.py</code> nunca executado; lote2 taxonomy staged no 3d-lib.</li>
 <li>Contagem SQL vs filtro de disco pode divergir com cache incompleto (documentado, degradê honesto).</li>
 </ul>
+<h2>C1–C4 improve-codebase-architecture (2026-11-05, branch <code>feat/3de-home-v2</code>)</h2>
+<h3>Resumo</h3>
+<p>Decisões Marcus: C4 preço em créditos sempre; C3 Medusa vende créditos avulsos (pacotes), peça custa crédito; C1/C2 por minha conta. Entrega: <strong>C1</strong> — <code>catalog.ts</code> fonte única (<code>CATALOG_BASE</code>, <code>catalogWhere(alias)</code>, <code>photoIdSub/photoLpSub</code>); <code>facets.ts</code> sem SQL duplicado. <strong>C2</strong> — <code>normalizePage</code> + <code>pageWindow</code> em <code>pagination.ts</code>; páginas sem loop próprio. <strong>C3/C4</strong> — <code>creditPackOf</code> (só <code>metadata.credits</code>, nunca título) + <code>listCreditPacks</code>; <code>getProduct</code> lookup direto (fim do N+1); nova página <code>/loja/creditos</code> (grade só de pacotes); detalhe <code>/loja/[handle]</code> com ramo pacote (bloco navy + X créditos) ou demo sinalizado; <code>creditPurchase</code> (reason <code>compra_avulsa</code>, idempotente por pedido) + <code>migrations/0003_compra_avulsa.sql</code> (coluna <code>order_ref</code> + UNIQUE parcial — <strong>não aplicada em prod</strong> até o checkout ligar o provedor). Testes 34/34, check 0, build ok.</p>
+<h3>Arquivos Criados/Alterados</h3>
+<ul>
+<li><code>src/lib/catalog.ts</code> — exports C1 (<code>CATALOG_BASE</code>, <code>CATALOG_COM_ARQUIVO</code>, <code>catalogWhere</code>, <code>photoIdSub/photoLpSub</code>); <code>listRecent</code> usa fonte única.</li>
+<li><code>src/lib/facets.ts</code> — fonte única + <code>clampPerPage/normalizePage/pageOffset</code>; <code>listCategories</code> com <code>catalogWhere('i2')</code>.</li>
+<li><code>src/lib/pagination.ts</code> — <code>normalizePage</code> + <code>pageWindow</code> novos.</li>
+<li><code>src/lib/medusa.ts</code> — <code>StoreProduct.metadata</code>, <code>creditPackOf</code>, <code>listCreditPacks</code>, <code>getProduct</code> direto.</li>
+<li><code>src/lib/credits.ts</code> — <code>creditPurchase</code> (dormitente até pagamento confirmado).</li>
+<li><code>src/pages/loja/creditos.astro</code> (nova) — grade de pacotes com <code>CurrencySelector</code>.</li>
+<li><code>src/pages/loja/[handle].astro</code> — ramos pacote/demo + breadcrumb créditos.</li>
+<li><code>src/pages/loja/index.astro</code>, <code>conta.astro</code>, <code>carrinho.astro</code> — links para créditos avulsos.</li>
+<li><code>tests/</code> — vitrine (fonte única), paginação (<code>normalizePage/pageWindow</code>), medusa (<code>creditPackOf</code>), loja (pacotes + <code>creditPurchase</code>).</li>
+</ul>
+<h3>Pendências/Riscos (atualizado)</h3>
+<ul>
+<li><code>migrations/0003_compra_avulsa.sql</code> <strong>não aplicada</strong> em prod — aplicar junto do deploy.</li>
+<li>Seed Medusa com pacotes reais (<code>metadata.credits</code>) + provedor de pagamento (checkout dormitente até lá).</li>
+<li>Rota <code>/loja/[handle]</code> para demos segue órfã por desenho (só pacotes entram na grade).</li>
+</ul>
 </body>
 </html>

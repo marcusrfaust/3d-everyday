@@ -2,7 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import ModelCard from '../../components/ModelCard.astro';
 import { searchItems, countItems, listCategories } from '../../lib/facets';
-import { PER_PAGE_PADRAO, totalPages, clampPage, buildPageUrl } from '../../lib/pagination';
+import { PER_PAGE_PADRAO, totalPages, clampPage, pageWindow, buildPageUrl } from '../../lib/pagination';
 export const prerender = false;
 const slug = Astro.params.slug ?? '';
 const paginaPedida = Math.max(1, Math.floor(Number(Astro.url.searchParams.get('pagina') ?? '1') || 1));
@@ -18,10 +18,7 @@ try {
 const atual = cats.find((c) => c.slug === slug);
 const pages = totalPages(total, perPage);
 const page = clampPage(paginaPedida, pages);
-const win: number[] = [];
-for (let p = 1; p <= pages; p++) {
-  if (p === 1 || p === pages || Math.abs(p - page) <= 2) win.push(p);
-}
+const win = pageWindow(pages, page);
 const urlPagina = (p: number) => buildPageUrl(`/categoria/${slug}`, {}, p);
 ---
 <Layout title={`${atual?.name ?? 'Categoria'} — 3d-Everyday`}>
