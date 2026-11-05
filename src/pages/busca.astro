@@ -1,18 +1,32 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import ModelCard from '../components/ModelCard.astro';
-import { searchItems, listCategories, listTags } from '../lib/facets';
+import { searchItems, countItems, listCategories, listTags } from '../lib/facets';
 import { groupFacets } from '../lib/taggroups';
+import { PER_PAGE_PADRAO, totalPages, clampPage, pageWindow, buildPageUrl } from '../lib/pagination';
 export const prerender = false;
 const q = (Astro.url.searchParams.get('q') ?? '').trim();
 const category = (Astro.url.searchParams.get('categoria') ?? '').trim();
 const tag = (Astro.url.searchParams.get('tag') ?? '').trim();
+const paginaPedida = Math.max(1, Math.floor(Number(Astro.url.searchParams.get('pagina') ?? '1') || 1));
+const perPage = PER_PAGE_PADRAO;
 let items: Awaited<ReturnType<typeof searchItems>> = [];
+let total = 0;
 let erro: string | null = null;
 let cats: Awaited<ReturnType<typeof listCategories>> = [];
 let tags: Awaited<ReturnType<typeof listTags>> = [];
-try { [items, cats, tags] = await Promise.all([searchItems({q, category, tag}), listCategories(), listTags()]); }
-catch (e) { erro = e instanceof Error ? e.message : 'falha na busca'; }
+try {
+  [total, cats, tags] = await Promise.all([countItems({q, category, tag}), listCategories(), listTags()]);
+  const pages0 = totalPages(total, perPage);
+  const page0 = clampPage(paginaPedida, pages0);
+  items = await searchItems({q, category, tag, page: page0, perPage});
+} catch (e) { erro = e instanceof Error ? e.message : 'falha na busca'; }
+const pages = totalPages(total, perPage);
+const page = clampPage(paginaPedida, pages);
+// Janela de páginas: fonte única em pagination.ts (C2).
+const win = pageWindow(pages, page);
+const filtros = {q, categoria: category, tag};
+const urlPagina = (p: number) => buildPageUrl('/busca', filtros, p);
 ---
 <Layout title="Buscar — 3d-Everyday">
 <main class="mx-auto mt-8 flex w-full max-w-6xl flex-wrap gap-5 px-4">
@@ -44,10 +58,21 @@ catch (e) { erro = e instanceof Error ? e.message : 'falha na busca'; }
 <p class="text-xs font-bold uppercase tracking-widest text-brand-600">{q || category || tag ? 'Resultados' : 'Catálogo'}</p>
 <h1 class="mt-1 font-display text-2xl font-extrabold tracking-tight md:text-3xl">{q || category || tag ? 'Resultados' : 'Todas as peças'}</h1>
 {erro ? <p class="mt-2 text-sm text-red-700" role="alert">Busca indisponível ({erro}).</p> : <>
-<p class="mt-1 font-mono text-sm text-stone-500">{items.length} peças.</p>
+<p class="mt-1 font-mono text-sm text-stone-500">{total} peças{pages > 1 ? ` — página ${page} de ${pages}` : '.'}</p>
 <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 {items.map((it, idx) => (<ModelCard item={it} eager={idx === 0} />))}
 </div>
+{!items.length ? <p class="mt-6 text-sm text-stone-500">Nada por aqui. <a href="/busca" class="font-semibold text-brand-600 hover:underline">Ver tudo</a></p> : null}
+{pages > 1 ? <nav aria-label="Paginação" class="mt-8 flex flex-wrap items-center gap-2">
+{page > 1 ? <a href={urlPagina(page - 1)} rel="prev" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-semibold hover:border-brand-600 hover:text-brand-600">← Anterior</a> : null}
+{win.map((p, i) => (<>
+{i > 0 && p - win[i - 1] > 1 ? <span class="px-1 text-sm text-stone-400" aria-hidden="true">…</span> : null}
+{p === page
+  ? <span aria-current="page" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-bold text-white">{p}</span>
+  : <a href={urlPagina(p)} class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-semibold hover:border-brand-600 hover:text-brand-600">{p}</a>}
+</>))}
+{page < pages ? <a href={urlPagina(page + 1)} rel="next" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-semibold hover:border-brand-600 hover:text-brand-600">Próxima →</a> : null}
+</nav> : null}
 </>}
 </div>
 </main>

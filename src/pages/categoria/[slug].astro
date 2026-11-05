@@ -1,15 +1,25 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import ModelCard from '../../components/ModelCard.astro';
-import { searchItems, listCategories } from '../../lib/facets';
+import { searchItems, countItems, listCategories } from '../../lib/facets';
+import { PER_PAGE_PADRAO, totalPages, clampPage, pageWindow, buildPageUrl } from '../../lib/pagination';
 export const prerender = false;
 const slug = Astro.params.slug ?? '';
+const paginaPedida = Math.max(1, Math.floor(Number(Astro.url.searchParams.get('pagina') ?? '1') || 1));
+const perPage = PER_PAGE_PADRAO;
 let items: Awaited<ReturnType<typeof searchItems>> = [];
+let total = 0;
 let erro: string | null = null;
 let cats: Awaited<ReturnType<typeof listCategories>> = [];
-try { [items, cats] = await Promise.all([searchItems({category: slug}), listCategories()]); }
-catch (e) { erro = e instanceof Error ? e.message : 'falha ao carregar categoria'; }
+try {
+  [total, cats] = await Promise.all([countItems({category: slug}), listCategories()]);
+  items = await searchItems({category: slug, page: clampPage(paginaPedida, totalPages(total, perPage)), perPage});
+} catch (e) { erro = e instanceof Error ? e.message : 'falha ao carregar categoria'; }
 const atual = cats.find((c) => c.slug === slug);
+const pages = totalPages(total, perPage);
+const page = clampPage(paginaPedida, pages);
+const win = pageWindow(pages, page);
+const urlPagina = (p: number) => buildPageUrl(`/categoria/${slug}`, {}, p);
 ---
 <Layout title={`${atual?.name ?? 'Categoria'} — 3d-Everyday`}>
 <main class="mx-auto mt-8 flex w-full max-w-6xl flex-wrap gap-5 px-4">
@@ -23,10 +33,20 @@ const atual = cats.find((c) => c.slug === slug);
 <p class="text-xs font-bold uppercase tracking-widest text-brand-600">Categoria</p>
 <h1 class="mt-1 font-display text-2xl font-extrabold tracking-tight md:text-3xl">{atual?.name ?? 'Categoria'}</h1>
 {erro ? <p class="mt-2 text-sm text-red-700" role="alert">Categoria indisponível ({erro}).</p> : <>
-<p class="mt-1 font-mono text-sm text-stone-500">{items.length} peças.</p>
+<p class="mt-1 font-mono text-sm text-stone-500">{total} peças{pages > 1 ? ` — página ${page} de ${pages}` : '.'}</p>
 <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 {items.map((it, idx) => (<ModelCard item={it} eager={idx === 0} />))}
 </div>
+{pages > 1 ? <nav aria-label="Paginação" class="mt-8 flex flex-wrap items-center gap-2">
+{page > 1 ? <a href={urlPagina(page - 1)} rel="prev" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-semibold hover:border-brand-600 hover:text-brand-600">← Anterior</a> : null}
+{win.map((p, i) => (<>
+{i > 0 && p - win[i - 1] > 1 ? <span class="px-1 text-sm text-stone-400" aria-hidden="true">…</span> : null}
+{p === page
+  ? <span aria-current="page" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-bold text-white">{p}</span>
+  : <a href={urlPagina(p)} class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-semibold hover:border-brand-600 hover:text-brand-600">{p}</a>}
+</>))}
+{page < pages ? <a href={urlPagina(page + 1)} rel="next" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-semibold hover:border-brand-600 hover:text-brand-600">Próxima →</a> : null}
+</nav> : null}
 </>}
 </div>
 </main>

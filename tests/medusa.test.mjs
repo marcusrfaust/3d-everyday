@@ -2,7 +2,7 @@
 // Roda: npm test. Gerado por `npm run build:test` (esbuild de src/lib/medusa.ts).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatMoney, productPrice, priceInCurrency, cartCount, normalizeCurrency, resolveRequestCurrency, localeForCurrency, resolveRegionId } from './_medusa.mjs';
+import { formatMoney, productPrice, priceInCurrency, cartCount, creditPackOf, normalizeCurrency, resolveRequestCurrency, localeForCurrency, resolveRegionId } from './_medusa.mjs';
 
 test('normalizeCurrency aceita USD/EUR/BRL (case/trim) e rejeita resto', () => {
   assert.equal(normalizeCurrency('USD'), 'usd');
@@ -76,4 +76,17 @@ test('priceInCurrency sinaliza fallback (exact=false)', () => {
 test('cartCount soma quantidades', () => {
   assert.equal(cartCount({ id: 'c', currency_code: 'brl', total: 0, items: [{ id: 'a', title: 'A', quantity: 2, unit_price: 100 }, { id: 'b', title: 'B', quantity: 3, unit_price: 50 }] }), 5);
   assert.equal(cartCount({ id: 'c', currency_code: 'usd', total: 0, items: [] }), 0);
+});
+
+test('creditPackOf lê SÓ metadata.credits (C3); nunca deduz do título', () => {
+  const base = { id: 'p', title: 'Pacote 500 créditos', handle: 'h', thumbnail: null };
+  assert.equal(creditPackOf({ ...base, metadata: { credits: 500 } }), 500);
+  assert.equal(creditPackOf({ ...base, metadata: { credits: '1500' } }), 1500);
+  assert.equal(creditPackOf(base), null); // sem metadata → não é pacote
+  assert.equal(creditPackOf({ ...base, metadata: null }), null);
+  assert.equal(creditPackOf({ ...base, metadata: {} }), null);
+  assert.equal(creditPackOf({ ...base, metadata: { credits: 0 } }), null);
+  assert.equal(creditPackOf({ ...base, metadata: { credits: -10 } }), null);
+  assert.equal(creditPackOf({ ...base, metadata: { credits: 2.5 } }), null);
+  assert.equal(creditPackOf({ ...base, metadata: { credits: 'abc' } }), null);
 });

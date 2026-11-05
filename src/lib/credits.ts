@@ -56,3 +56,16 @@ export async function extrato(userId: number, limit = 30) {
   const n = Math.min(Math.max(1, Math.floor(limit) || 30), 100);
   return acctQuery(`SELECT month, delta, reason, item_id, created_at FROM credits_ledger WHERE user_id = ? ORDER BY id DESC LIMIT ?`, [userId, n]);
 }
+
+// Compra avulsa (C3, Marcus 04/11/26): pacote Medusa PAGO vira saldo no ledger.
+// Idempotente por pedido: retry/webhook duplo com o mesmo orderId não credita 2x
+// (UNIQUE parcial idx_ledger_compra, 0003). DORMITENTE até o checkout ligar o
+// provedor de pagamento — nunca chamar sem pagamento confirmado (irreversível).
+export async function creditPurchase(userId: number, credits: number, orderId: string, month: string): Promise<{ok: boolean;saldo: number}> {
+  const n = Math.floor(Number(credits));
+  const ref = String(orderId ?? '').trim();
+  if (!Number.isInteger(n) || n <= 0) throw new Error('pacote inválido (créditos)');
+  if (!ref || ref.length > 128) throw new Error('pedido inválido (order_ref)');
+  await acctQuery(`INSERT OR IGNORE INTO credits_ledger (user_id, month, delta, reason, order_ref) VALUES (?,?,?,'compra_avulsa',?)`, [userId, month, n, ref]);
+  return {ok: true, saldo: await balanceOf(userId)};
+}

@@ -9,9 +9,11 @@ import { acctQuery } from './acctdb';
 import { priceRule } from './plans';
 export interface CatalogItem {id: number;name: string;category: string | null;categoryName: string | null;photoId: number | null;price: number;}
 export const DEV_SAMPLE_LIMIT = 100;
-const BASE = `i.status IN ('reposted','captured') AND i.is_adult = 0`;
+// Regra "anunciável" — fonte única (C1): peça baixável + foto local servível.
+// facets.ts importa daqui; nunca redefinir BASE/COM_ARQUIVO noutro módulo.
+export const CATALOG_BASE = `i.status IN ('reposted','captured') AND i.is_adult = 0`;
 // Vitrine só lista peça baixável: com documento que tenha link no Drive.
-const COM_ARQUIVO = `EXISTS (SELECT 1 FROM files d WHERE d.item_id = i.id AND d.kind = 'document' AND d.drive_url LIKE 'https://drive.google.com/%')`;
+export const CATALOG_COM_ARQUIVO = `EXISTS (SELECT 1 FROM files d WHERE d.item_id = i.id AND d.kind = 'document' AND d.drive_url LIKE 'https://drive.google.com/%')`;
 // Vitrine só anuncia peça com imagem destacada real e servível (decisão Marcus 04/11/26):
 // sem foto LOCAL, sem card. O thumb só serve arquivo local (3dlib-cache);
 // foto só-Drive cairia no placeholder — por isso COM_FOTO exige local_path.
@@ -27,6 +29,14 @@ export function fotoServivel(localPath: unknown): boolean {
   const r = resolve(lp);
   return (r === CACHE_DIR || r.startsWith(CACHE_DIR + '/')) && existsSync(r);
 }
+// Subselects de foto (alias do item como parâmetro — listRecent/searchItems usam
+// `i`, listCategories usa `i2`). Fonte única: nunca copiar esse SQL noutro módulo.
+export const photoIdSub = (a: string) => `(SELECT f.id FROM files f WHERE f.item_id = ${a}.id AND f.kind = 'photo' AND f.local_path IS NOT NULL AND f.local_path <> '' ORDER BY f.id DESC LIMIT 1)`;
+export const photoLpSub = (a: string) => `(SELECT f.local_path FROM files f WHERE f.item_id = ${a}.id AND f.kind = 'photo' AND f.local_path IS NOT NULL AND f.local_path <> '' ORDER BY f.id DESC LIMIT 1)`;
+// WHERE completo da vitrine para um dado alias (C1: conds builder único).
+export const catalogWhere = (alias = 'i') => alias === 'i'
+  ? `${CATALOG_BASE} AND ${CATALOG_COM_ARQUIVO} AND ${COM_FOTO}`
+  : `${alias}.status IN ('reposted','captured') AND ${alias}.is_adult = 0 AND EXISTS (SELECT 1 FROM files d WHERE d.item_id = ${alias}.id AND d.kind = 'document' AND d.drive_url LIKE 'https://drive.google.com/%') AND EXISTS (SELECT 1 FROM files f WHERE f.item_id = ${alias}.id AND f.kind = 'photo' AND f.local_path IS NOT NULL AND f.local_path <> '')`;
 // Limpa nome de arquivo/título: tira extensões (mesmo duplas, "..zip"), troca
 // separadores por espaço, remove rabo de ingestão (data + sufixo de lote:
 // "...3mf20260908_1_ru") e tokens soltos de formato no meio do nome.
@@ -53,11 +63,11 @@ export async function listRecent(limit = 24): Promise<CatalogItem[]> {
   const n = Math.min(limit, DEV_SAMPLE_LIMIT);
   const rows = await d1query(
     `SELECT i.id AS id, i.name AS name, c.slug AS category, c.name AS category_name,
-      (SELECT f.id FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' AND f.local_path IS NOT NULL AND f.local_path <> '' ORDER BY f.id DESC LIMIT 1) AS photoId,
-      (SELECT f.local_path FROM files f WHERE f.item_id = i.id AND f.kind = 'photo' AND f.local_path IS NOT NULL AND f.local_path <> '' ORDER BY f.id DESC LIMIT 1) AS photoLp,
+      ${photoIdSub('i')} AS photoId,
+      ${photoLpSub('i')} AS photoLp,
       (SELECT f2.file_name FROM files f2 WHERE f2.item_id = i.id AND f2.kind = 'document' ORDER BY f2.id ASC LIMIT 1) AS fileName,
       (SELECT COALESCE(SUM(f3.size_bytes),0) FROM files f3 WHERE f3.item_id = i.id AND f3.kind = 'document') AS totalBytes
-     FROM items i LEFT JOIN categories c ON c.id = i.category_id WHERE ${BASE} AND ${COM_ARQUIVO} AND ${COM_FOTO} ORDER BY i.created_at DESC LIMIT ?`, [n]);
+     FROM items i LEFT JOIN categories c ON c.id = i.category_id WHERE ${catalogWhere()} ORDER BY i.created_at DESC LIMIT ?`, [n]);
   const overs = n ? await priceOverrides(rows.map((r) => Number(r.id))) : new Map<number, number>();
   // Garantia final: só anuncia o que o thumb serve (arquivo existe no cache).
   return rows.filter((r) => fotoServivel(r.photoLp)).map((r) => {

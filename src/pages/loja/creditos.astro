@@ -1,0 +1,33 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import SectionHeader from '../../components/SectionHeader.astro';
+import CurrencySelector from '../../components/CurrencySelector.astro';
+import { listCreditPacks, priceInCurrency, formatMoney, normalizeCurrency, REGION_COOKIE } from '../../lib/medusa';
+export const prerender = false;
+// Créditos avulsos (C3, Marcus 04/11/26): dinheiro só compra PACOTE de créditos.
+// Peça (STL/3MF) custa créditos — ver /loja. Só produto Medusa com
+// metadata.credits entra aqui; merch/demo sem metadata fica fora (nunca anunciado).
+const requested = Astro.url.searchParams.get('currency');
+const chosen = normalizeCurrency(requested) ?? normalizeCurrency(Astro.cookies.get(REGION_COOKIE)?.value) ?? null;
+if (requested && chosen) Astro.cookies.set(REGION_COOKIE, chosen, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+let packs: Awaited<ReturnType<typeof listCreditPacks>> = [];
+let lojaErro: string | null = null;
+try { packs = await listCreditPacks(24); } catch (e) { lojaErro = e instanceof Error ? e.message : 'erro'; }
+const current = chosen ?? packs.map((p) => priceInCurrency(p.pack, undefined).price?.currency_code).find(Boolean) ?? 'usd';
+---
+<Layout title="Comprar créditos — 3d-Everyday">
+<main class="mx-auto w-full max-w-6xl px-4 py-8">
+<SectionHeader eyebrow="Créditos avulsos" title="Comprar créditos" linkHref="/loja" linkLabel="Ver peças →" />
+<p class="mt-2 text-sm text-stone-500">Sem plano ou saldo curto? O pacote cai na sua carteira após a confirmação do pagamento. Peças continuam custando créditos — ver <a href="/loja" class="font-semibold text-brand-600 hover:underline">loja</a>.</p>
+<div class="mt-4 flex items-center justify-end"><CurrencySelector current={current} next="/loja/creditos" /></div>
+{lojaErro ? <p class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">Pacotes indisponíveis no momento ({lojaErro}). Tente novamente em instantes.</p> : null}
+{!lojaErro && !packs.length ? <p class="mt-4 text-sm text-stone-500">Nenhum pacote à venda no momento — fale com o suporte.</p> : null}
+<div class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+{packs.map(({pack: p, credits}) => { const found = priceInCurrency(p, chosen ?? undefined); const pr = found.price; return (
+<a href={`/loja/${p.handle}`} class="group overflow-hidden rounded-xl border border-stone-200 bg-white transition hover:-translate-y-1 hover:shadow-lg">
+<div class="flex aspect-square flex-col items-center justify-center gap-1 bg-brand-800 text-white"><span class="font-mono text-3xl font-extrabold">{credits}</span><span class="text-xs font-bold uppercase tracking-widest">créditos</span></div>
+<div class="p-3"><p class="truncate text-sm font-bold">{p.title}</p><p class="mt-1 font-mono text-sm font-bold text-brand-700">{pr ? formatMoney(pr.amount, pr.currency_code) : 'preço sob consulta'}</p></div>
+</a>); })}
+</div>
+</main>
+</Layout>
