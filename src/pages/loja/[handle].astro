@@ -22,7 +22,8 @@ const packCredits = product ? creditPackOf(product) : null;
 // STL (Marcus 06/11/26): aquisicao via carteira — sem form de cart fiat.
 const stlItem = product && isStlProduct(product) ? stlItemId(product) : null;
 const stlCredits = product && isStlProduct(product) ? stlCreditsPrice(product) : null;
-const isStl = stlItem != null && stlCredits != null;
+const isStl = product ? isStlProduct(product) : false;
+const stlBannerCred = stlCredits != null ? ` — ${stlCredits} créditos` : '';
 const titulo = product?.title ?? 'Produto';
 const mostraPrecoFiat = !isStl && pr != null;
 const precoFiat = pr ? formatMoney(pr.amount, pr.currency_code) : 'preço sob consulta';
@@ -46,13 +47,13 @@ const semPrecoMoeda = pr != null && !exactPrice;
 )}
 <div class="flex flex-col gap-4">
 <p class="text-sm text-stone-500"><a href="/" class="hover:underline">Início</a> / {isStl ? <a href="/loja" class="hover:underline">Loja</a> : <a href="/loja/creditos" class="hover:underline">Créditos</a>} / {titulo}</p>
-{isStl && <p class="rounded-xl border border-brand-600/30 bg-brand-600/5 p-3 text-sm text-brand-700">Projeto do acervo — <strong>{stlCredits} créditos</strong>. A aquisição debita da sua carteira na página da peça.</p>}
+{isStl && <p class="rounded-xl border border-brand-600/30 bg-brand-600/5 p-3 text-sm text-brand-700">Projeto do acervo{stlBannerCred}. A aquisição debita da sua carteira na página da peça.</p>}
 {!isStl && packCredits != null && <p class="rounded-xl border border-brand-600/30 bg-brand-600/5 p-3 text-sm text-brand-700">Pacote de <strong>{packCredits} créditos</strong> — cai na sua carteira após a confirmação do pagamento.</p>}
 {!isStl && packCredits == null && <p class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Produto de demonstração — fora do catálogo oficial de STL/3MF (ver <a href="/loja" class="font-semibold underline">loja</a>).</p>}
 <div class="flex items-center justify-end"><CurrencySelector current={current} next={`/loja/${handle}`} /></div>
 {erro && <p class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">Loja indisponível ({erro}).</p>}
 <h1 class="font-display text-3xl font-extrabold tracking-tight">{titulo}</h1>
-{isStl && <p class="font-mono text-2xl font-bold text-brand-700">{stlCredits} créditos</p>}
+{isStl && stlCredits != null && <p class="font-mono text-2xl font-bold text-brand-700">{stlCredits} créditos</p>}
 {!isStl && packCredits != null && <p class="font-mono text-2xl font-bold text-brand-700">{packCredits} créditos</p>}
 {mostraPrecoFiat && <p class="font-mono text-2xl font-bold text-brand-700">{precoFiat}</p>}
 {avisaMoeda && <p class="text-xs text-stone-500">Preço exibido em {moedaTxt} — sem preço nesta moeda no momento.</p>}

@@ -92,7 +92,18 @@ export const POST: APIRoute = async ({ params, request, cookies, redirect }) => 
     const qty = Math.max(0, Math.min(99, Number(form.get('qty') ?? 0) || 0));
     const id = await cartIdFrom(cookies);
     if (id && lineId) {
-      try { await updateLine(id, lineId, qty); } catch { return redirect('/loja/carrinho?erro=checkout'); }
+      try {
+        // STL nao mora em cart: linha STL e removida e o usuario vai p/ a peca.
+        const cart = await getCart(id).catch(() => null);
+        const line = cart?.items.find((l) => l.id === lineId);
+        const stlMap = await stlVariantMap().catch(() => new Map());
+        const itemId = line?.variant_id ? stlMap.get(line.variant_id) : undefined;
+        if (itemId != null) {
+          await updateLine(id, lineId, 0).catch(() => null);
+          return redirect(`/modelo/${itemId}`);
+        }
+        await updateLine(id, lineId, qty);
+      } catch { return redirect('/loja/carrinho?erro=checkout'); }
     }
     return redirect('/loja/carrinho');
   }
@@ -100,6 +111,14 @@ export const POST: APIRoute = async ({ params, request, cookies, redirect }) => 
     const id = await cartIdFrom(cookies);
     if (!id) return redirect('/loja/carrinho');
     try {
+      // Revalida antes de completar: cart com linha STL nao fecha (limpa e volta).
+      const cart = await getCart(id).catch(() => null);
+      const stlMap = await stlVariantMap().catch(() => new Map());
+      const stlLines = (cart?.items ?? []).filter((l) => l.variant_id != null && stlMap.has(l.variant_id));
+      if (stlLines.length) {
+        for (const l of stlLines) await updateLine(id, l.id, 0).catch(() => null);
+        return redirect('/loja/carrinho?erro=stl');
+      }
       await completeCart(id);
       cookies.delete(COOKIE, { path: '/' });
       return redirect('/loja/carrinho?checkout=ok');

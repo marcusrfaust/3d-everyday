@@ -30,6 +30,13 @@ test('detalhe STL: ramo sem cart fiat, com link /modelo (Marcus 06/11/26)', () =
   assert.ok(detalhe.includes('adquirir com créditos'), 'CTA de créditos no ramo STL');
 });
 
+test('cart/update remove linha STL e checkout recusa carrinho com STL (fail-closed)', () => {
+  const action = readFileSync(path.join(root, 'src/pages/api/cart/[action].ts'), 'utf8');
+  assert.ok(action.includes('stlLines'), 'checkout varre linhas STL do carrinho');
+  assert.ok(action.includes('erro=stl'), 'checkout com STL volta sem completar');
+  assert.ok(action.includes('/modelo/${itemId}'), 'update com STL remove a linha e leva à peça');
+});
+
 test('cart/add bloqueia variante STL (guard anti-bypass)', () => {
   const action = readFileSync(path.join(root, 'src/pages/api/cart/[action].ts'), 'utf8');
   assert.ok(action.includes('stlVariantMap'), 'add consulta o mapa de variantes STL');

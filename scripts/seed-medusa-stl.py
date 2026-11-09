@@ -167,11 +167,10 @@ for it in items:
                      'photo_id': it['photoId'], 'category': it['category'], 'source': '3dlib-catalog'},
         'sales_channels': [{'id': sc}],
         'options': [{'title': 'Formato', 'values': ['Digital']}],
+        # SEM prices de proposito: variante sem preco fiat nao entra em cart
+        # nem completa checkout (controle no backend, nao so no frontend).
         'variants': [{'title': 'Padrao', 'sku': 'STL-%d' % it['id'],
-                      'options': {'Formato': 'Digital'},
-                      'prices': [{'amount': 1, 'currency_code': 'usd'},
-                                 {'amount': 1, 'currency_code': 'eur'},
-                                 {'amount': 1, 'currency_code': 'brl'}]}],
+                      'options': {'Formato': 'Digital'}}],
     }
     st, d = med('/admin/products', 'POST', body, TOK)
     if st in (200, 201):

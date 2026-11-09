@@ -33,7 +33,7 @@ export function fotoServivel(localPath: unknown): boolean {
 // Gate final da vitrine: anuncia o que o thumb serve (local no disco OU Drive).
 export function fotoAnunciavel(localPath: unknown, driveUrl: unknown): boolean {
   if (fotoServivel(localPath)) return true;
-  return String(driveUrl ?? '').startsWith('https://drive.google.com/');
+  return driveId(driveUrl) != null; // igual ao que o thumb consegue servir
 }
 // Extrai o ID do arquivo de um link https://drive.google.com/file/d/{id}/view
 // (padrão do acervo). Null quando o formato é desconhecido.

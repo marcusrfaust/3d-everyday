@@ -85,7 +85,7 @@ test('creditPackOf exige kind credit_pack (C3); STL nunca é pacote', () => {
   assert.equal(creditPackOf(base), null); // sem metadata → não é pacote
   assert.equal(creditPackOf({ ...base, metadata: null }), null);
   assert.equal(creditPackOf({ ...base, metadata: {} }), null);
-  assert.equal(creditPackOf({ ...base, metadata: { credits: 500 } }), null); // sem kind → não é pacote
+  assert.equal(creditPackOf({ ...base, metadata: { credits: 500 } }), 500); // legado sem kind (transição)
   assert.equal(creditPackOf({ ...base, metadata: { kind: 'stl', item_id: 1, credits_price: 500, credits: 500 } }), null); // STL ≠ pacote
   assert.equal(creditPackOf({ ...base, metadata: { kind: 'credit_pack', credits: 0 } }), null);
   assert.equal(creditPackOf({ ...base, metadata: { kind: 'credit_pack', credits: -10 } }), null);

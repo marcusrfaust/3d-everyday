@@ -58,8 +58,8 @@ export async function resolveRegionId(currency?: unknown): Promise<string> {
   }
   return regions[0].id;
 }
-export async function listProducts(limit = 24): Promise<StoreProduct[]> {
-  const d = await store(`/store/products?limit=${Math.min(limit, 100)}&fields=id,title,handle,thumbnail,metadata,*variants.prices`);
+export async function listProducts(limit = 24, offset = 0): Promise<StoreProduct[]> {
+  const d = await store(`/store/products?limit=${Math.min(limit, 100)}&offset=${Math.max(0, offset)}&fields=id,title,handle,thumbnail,metadata,*variants.prices`);
   return (d.products ?? []).map((p: any) => ({
     id: String(p.id), title: String(p.title ?? 'Produto sem título'), handle: String(p.handle ?? p.id),
     thumbnail: p.thumbnail == null ? null : String(p.thumbnail),
@@ -86,10 +86,12 @@ export async function getProduct(handle: string): Promise<StoreProduct | null> {
 // (quantidade, inteiro > 0). STL = kind 'stl' (nunca pacote). Sem kind válido,
 // não é pacote (nunca deduzir do título).
 export function creditPackOf(p: StoreProduct): number | null {
-  if (p.metadata?.kind !== 'credit_pack') return null;
+  const kind = p.metadata?.kind;
+  if (kind != null && kind !== 'credit_pack') return null; // STL/merch nunca pack
   const raw = p.metadata?.credits;
   const n = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
   return Number.isInteger(n) && n > 0 ? n : null;
+  // kind ausente + credits valido = pack legado (transicao; seed novo grava kind).
 }
 // ---- Projetos STL (Marcus 06/11/26): /app/products lista o acervo ----
 // Produto STL = metadata.kind 'stl' + item_id + credits_price. Aquisicao via
@@ -113,12 +115,19 @@ export function stlCreditsPrice(p: StoreProduct): number | null {
 // Custo: 1 listagem (add) — acao de usuario, baixa frequencia.
 export async function stlVariantMap(): Promise<Map<string, number>> {
   const m = new Map<string, number>();
-  const all = await listProducts(100).catch(() => []);
-  for (const p of all) {
+  // Pagina ate esgotar: acervo >100 nao pode deixar variante STL fora do mapa.
+  let offset = 0;
+  for (;;) {
+    const page = await listProducts(100, offset).catch(() => []);
+    if (!page.length) break;
+    for (const p of page) {
     if (!isStlProduct(p)) continue;
     const itemId = stlItemId(p);
-    if (itemId == null) continue;
-    for (const v of p.variants ?? []) m.set(v.id, itemId);
+      if (itemId == null) continue;
+      for (const v of p.variants ?? []) m.set(v.id, itemId);
+    }
+    if (page.length < 100) break;
+    offset += page.length;
   }
   return m;
 }
