@@ -194,13 +194,24 @@ for it in items:
                      'photo_id': it['photoId'], 'category': it['category'], 'source': '3dlib-catalog'},
         'sales_channels': [{'id': sc}],
         'options': [{'title': 'Formato', 'values': ['Digital']}],
-        # SEM prices de proposito: variante sem preco fiat nao entra em cart
-        # nem completa checkout (controle no backend, nao so no frontend).
+        # Price fiat e OBRIGATORIO na criacao do Medusa; zerado logo apos
+        # (invariante anti-bypass N2/N3: variante STL jamais tem price —
+        # sem price, cart/checkout via Store API e impossivel).
         'variants': [{'title': 'Padrao', 'sku': 'STL-%d' % it['id'],
-                      'options': {'Formato': 'Digital'}}],
+                      'options': {'Formato': 'Digital'},
+                      'prices': [{'amount': 1, 'currency_code': 'usd'}]}],
     }
     st, d = med('/admin/products', 'POST', body, TOK)
     if st in (200, 201):
+        pid = d['product']['id']
+        vid = ((d['product'].get('variants') or [{}])[0] or {}).get('id')
+        zst, _ = med('/admin/products/%s/variants/%s' % (pid, vid), 'POST', {'prices': []}, TOK)
+        vst, vd = med('/admin/products/%s?fields=id,*variants.prices' % pid, token=TOK)
+        restam = [x for v in (((vd.get('product') or {}).get('variants')) or []) for x in (v.get('prices') or [])]
+        if zst not in (200, 201) or restam:
+            failed.append(handle + ' (price nao zerado)')
+            print('  ! %s price fiat remanescente — INTERVENCAO MANUAL' % handle)
+            continue
         created += 1
         print('  + %s | %s | %d cred' % (handle, it['name'][:45], it['credits']))
     else:
