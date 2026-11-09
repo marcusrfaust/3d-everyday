@@ -38,7 +38,7 @@ export function fotoAnunciavel(localPath: unknown, driveUrl: unknown): boolean {
 // Extrai o ID do arquivo de um link https://drive.google.com/file/d/{id}/view
 // (padrão do acervo). Null quando o formato é desconhecido.
 export function driveId(driveUrl: unknown): string | null {
-  const m = String(driveUrl ?? '').match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?[^\s]*[?&]id=)([A-Za-z0-9_-]{10,})/);
+  const m = String(driveUrl ?? '').match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^\s]*[?&])?id=)([A-Za-z0-9_-]{10,})/);
   return m ? m[1] : null;
 }
 // Miniatura pública do Drive p/ <img> (sem auth quando o arquivo é compartilhado).

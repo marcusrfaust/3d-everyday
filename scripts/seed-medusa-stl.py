@@ -84,14 +84,14 @@ LP = "local_path IS NOT NULL AND local_path <> ''"
 DRV = "drive_url LIKE 'https://drive.google.com/%'"
 rows = d1(D1_ACCT, D1_DB,
           "SELECT i.id AS id, i.name AS name, c.slug AS cat, c.name AS catname, "
-          "(SELECT f.id FROM files f WHERE f.item_id=i.id AND f.kind='photo' AND " + LP + " ORDER BY f.id DESC LIMIT 1) photoId, "
+          "(SELECT f.id FROM files f WHERE f.item_id=i.id AND f.kind='photo' AND ((" + LP + ") OR (" + DRV + ")) ORDER BY f.id DESC LIMIT 1) photoId, "
           "(SELECT f2.file_name FROM files f2 WHERE f2.item_id=i.id AND f2.kind='document' ORDER BY f2.id LIMIT 1) fn, "
           "(SELECT LOWER(GROUP_CONCAT(x.f)) FROM (SELECT f4.file_name AS f FROM files f4 WHERE f4.item_id=i.id AND f4.kind='document' ORDER BY f4.id LIMIT 5) x) fns, "
           "(SELECT COALESCE(SUM(f3.size_bytes),0) FROM files f3 WHERE f3.item_id=i.id AND f3.kind='document') tb "
           "FROM items i LEFT JOIN categories c ON c.id=i.category_id "
           "WHERE i.status IN ('reposted','captured') AND i.is_adult=0 "
           "AND EXISTS (SELECT 1 FROM files d WHERE d.item_id=i.id AND d.kind='document' AND " + DRV + ") "
-          "AND EXISTS (SELECT 1 FROM files f WHERE f.item_id=i.id AND f.kind='photo' AND " + LP + ") "
+          "AND EXISTS (SELECT 1 FROM files f WHERE f.item_id=i.id AND f.kind='photo' AND ((" + LP + ") OR (" + DRV + "))) "
           "ORDER BY i.created_at DESC LIMIT %d" % HARD_CAP)
 
 overs = {}

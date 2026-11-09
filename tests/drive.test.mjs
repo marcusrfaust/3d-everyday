@@ -21,6 +21,7 @@ test('driveId casa file/d do acervo', () => {
 test('driveId casa open?id e uc?id', () => {
   assert.ok('https://drive.google.com/open?id=ABCdef1234567890'.match(re), 'open?id casa');
   assert.ok('https://drive.google.com/uc?export=download&id=ABCdef1234567890'.match(re), 'uc?id casa');
+  assert.ok('https://drive.google.com/uc?id=ABCdef1234567890'.match(re), 'uc?id nu casa');
 });
 test('driveId rejeita folders, dominios estranhos e ids curtos', () => {
   assert.equal('https://drive.google.com/drive/folders/xyz1234567890'.match(re), null);
