@@ -22,9 +22,18 @@ test('loja anuncia preço em créditos e leva ao modelo', () => {
   assert.ok(loja.includes('/busca'), 'ver-tudo para o catálogo');
 });
 
-test('checkout Medusa preservado nas rotas de detalhe (sem delete)', () => {
+test('detalhe STL: ramo sem cart fiat, com link /modelo (Marcus 06/11/26)', () => {
   const detalhe = readFileSync(path.join(root, 'src/pages/loja/[handle].astro'), 'utf8');
   assert.ok(detalhe.includes('getProduct'), 'detalhe Medusa intacto');
+  assert.ok(detalhe.includes('isStlProduct'), 'detalhe distingue produto STL');
+  assert.ok(detalhe.includes('/modelo/${stl!.itemId}') || detalhe.includes('/modelo/'), 'STL leva à peça (aquisição via carteira)');
+  assert.ok(detalhe.includes('adquirir com créditos'), 'CTA de créditos no ramo STL');
+});
+
+test('cart/add bloqueia variante STL (guard anti-bypass)', () => {
+  const action = readFileSync(path.join(root, 'src/pages/api/cart/[action].ts'), 'utf8');
+  assert.ok(action.includes('stlVariantMap'), 'add consulta o mapa de variantes STL');
+  assert.ok(action.includes('/modelo/${itemId}'), 'variante STL redireciona para a peça');
 });
 
 test('créditos avulsos: grade só de pacotes (C3), detalhe com ramos pacote/demo', () => {

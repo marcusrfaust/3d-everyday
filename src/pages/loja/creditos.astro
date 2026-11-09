@@ -18,7 +18,7 @@ const current = chosen ?? packs.map((p) => priceInCurrency(p.pack, undefined).pr
 <Layout title="Comprar créditos — 3d-Everyday">
 <main class="mx-auto w-full max-w-6xl px-4 py-8">
 <SectionHeader eyebrow="Créditos avulsos" title="Comprar créditos" linkHref="/loja" linkLabel="Ver peças →" />
-<p class="mt-2 text-sm text-stone-500">Sem plano ou saldo curto? O pacote cai na sua carteira após a confirmação do pagamento. Peças continuam custando créditos — ver <a href="/loja" class="font-semibold text-brand-600 hover:underline">loja</a>.</p>
+<p class="mt-2 text-sm text-stone-500">Sem saldo? O pacote será adicionado à sua carteira após a confirmação do pagamento. Peças continuam custando créditos — ver <a href="/loja" class="font-semibold text-brand-600 hover:underline">loja</a>.</p>
 <div class="mt-4 flex items-center justify-end"><CurrencySelector current={current} next="/loja/creditos" /></div>
 {lojaErro ? <p class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">Pacotes indisponíveis no momento ({lojaErro}). Tente novamente em instantes.</p> : null}
 {!lojaErro && !packs.length ? <p class="mt-4 text-sm text-stone-500">Nenhum pacote à venda no momento — fale com o suporte.</p> : null}

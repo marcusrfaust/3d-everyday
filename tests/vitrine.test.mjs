@@ -35,10 +35,26 @@ test('ModelCard mantém fallback só como rede de segurança', () => {
   assert.ok(card.includes('Sem foto'), 'fallback defensivo deve existir');
 });
 
-test('fotoServivel exige arquivo local dentro do cache (thumb nunca placeholder)', () => {
-  assert.ok(catalog.includes('fotoServivel'), 'catalog.ts deve exportar fotoServivel');
-  assert.ok(catalog.includes('existsSync'), 'fotoServivel verifica o disco');
-  assert.ok(catalog.includes('3dlib-cache'), 'fotoServivel mira o cache do thumb');
-  assert.ok(catalog.includes('filter((r) => fotoServivel(r.photoLp))'), 'listRecent descarta sem arquivo servível');
-  assert.ok(facets.includes('fotoServivel(r.photoLp)'), 'facets descarta/capa sem arquivo servível');
+test('gate final anuncia o que o thumb serve: local OU Drive (auditoria 08/11/26)', () => {
+  assert.ok(catalog.includes('fotoAnunciavel'), 'catalog.ts deve exportar fotoAnunciavel');
+  assert.ok(catalog.includes('filter((r) => fotoAnunciavel(r.photoLp, r.photoDu))'), 'listRecent usa o gate Drive');
+  assert.ok(facets.includes('fotoAnunciavel(r.photoLp, r.photoDu)'), 'facets usa o gate Drive');
+  assert.ok(catalog.includes('photoDuSub'), 'fonte única expõe photoDuSub');
+  assert.ok(facets.includes('photoDuSub'), 'facets usa photoDuSub');
+  assert.ok(!facets.includes('fotoServivel('), 'facets não usa mais o gate só-local');
+});
+
+test('driveId/driveThumb convertem link do acervo em miniatura pública', () => {
+  assert.ok(catalog.includes('export function driveId'), 'catalog.ts deve exportar driveId');
+  assert.ok(catalog.includes('export function driveThumb'), 'catalog.ts deve exportar driveThumb');
+  assert.ok(catalog.includes('drive.google.com/thumbnail'), 'thumb usa endpoint público de miniatura');
+});
+
+test('thumb redireciona p/ Drive quando sem arquivo local', () => {
+  const thumb = readFileSync(path.join(root, 'src/pages/api/thumb/[fileId].ts'), 'utf8');
+  assert.ok(thumb.includes('Response.redirect'), 'thumb faz redirect p/ miniatura do Drive');
+});
+
+test('categorias exibem rótulo PT-BR sem tocar no slug', () => {
+  assert.ok(facets.includes('rotuloCategoria'), 'listCategories aplica rótulo PT-BR');
 });

@@ -82,14 +82,46 @@ export async function getProduct(handle: string): Promise<StoreProduct | null> {
 
 // ---- Créditos avulsos (C3/C4, decisão Marcus 04/11/26) ----
 // Peça (STL/3MF) custa créditos; dinheiro só compra PACOTE de créditos no Medusa.
-// Pacote = produto Medusa com metadata.credits = quantidade (inteiro > 0).
-// Sem metadata.credits válido, não é pacote (nunca deduzir do título).
+// Pacote = produto Medusa com metadata.kind='credit_pack' + metadata.credits
+// (quantidade, inteiro > 0). STL = kind 'stl' (nunca pacote). Sem kind válido,
+// não é pacote (nunca deduzir do título).
 export function creditPackOf(p: StoreProduct): number | null {
+  if (p.metadata?.kind !== 'credit_pack') return null;
   const raw = p.metadata?.credits;
   const n = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
   return Number.isInteger(n) && n > 0 ? n : null;
 }
-// Só pacotes entram na grade de créditos avulsos (demo/merch sem metadata fica fora).
+// ---- Projetos STL (Marcus 06/11/26): /app/products lista o acervo ----
+// Produto STL = metadata.kind 'stl' + item_id + credits_price. Aquisicao via
+// carteira de creditos (/modelo + /api/download); checkout fiat NUNCA serve.
+export function isStlProduct(p: StoreProduct): boolean {
+  return p.metadata?.kind === 'stl';
+}
+export function stlItemId(p: StoreProduct): number | null {
+  const raw = p.metadata?.item_id;
+  const n = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+export function stlCreditsPrice(p: StoreProduct): number | null {
+  const raw = p.metadata?.credits_price;
+  const n = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+// Mapa variante -> item_id para produtos STL (guard anti-bypass, Marcus 06/11/26).
+// O detalhe STL nem renderiza form de cart, mas a Store API e publica: sem este
+// scan, um POST manual com variantId STL compraria a peca por 1 unidade fiat.
+// Custo: 1 listagem (add) — acao de usuario, baixa frequencia.
+export async function stlVariantMap(): Promise<Map<string, number>> {
+  const m = new Map<string, number>();
+  const all = await listProducts(100).catch(() => []);
+  for (const p of all) {
+    if (!isStlProduct(p)) continue;
+    const itemId = stlItemId(p);
+    if (itemId == null) continue;
+    for (const v of p.variants ?? []) m.set(v.id, itemId);
+  }
+  return m;
+}
 export async function listCreditPacks(limit = 24): Promise<Array<{ pack: StoreProduct; credits: number }>> {
   const all = await listProducts(Math.min(Math.max(1, limit * 2), 100));
   const packs: Array<{ pack: StoreProduct; credits: number }> = [];
@@ -99,6 +131,20 @@ export async function listCreditPacks(limit = 24): Promise<Array<{ pack: StorePr
     if (packs.length >= limit) break;
   }
   return packs;
+}
+// Projetos STL publicados (grade oficial do acervo no /app/products).
+export async function listStlProducts(limit = 24): Promise<Array<{ product: StoreProduct; itemId: number; credits: number }>> {
+  const all = await listProducts(Math.min(Math.max(1, limit * 2), 100));
+  const out: Array<{ product: StoreProduct; itemId: number; credits: number }> = [];
+  for (const p of all) {
+    if (!isStlProduct(p)) continue;
+    const itemId = stlItemId(p);
+    const credits = stlCreditsPrice(p);
+    if (itemId == null || credits == null) continue;
+    out.push({ product: p, itemId, credits });
+    if (out.length >= limit) break;
+  }
+  return out;
 }
 export async function createCart(regionId: string): Promise<StoreCart> {
   const d = await store('/store/carts', { method: 'POST', body: JSON.stringify({ region_id: regionId }) });

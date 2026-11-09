@@ -2,7 +2,7 @@
 // cookie medusa_region guarda a moeda escolhida (usd/eur/brl).
 // POST /api/cart/add | /update | /checkout | /currency (Astro SSR, server-side, chave nunca vaza).
 import type { APIRoute } from 'astro';
-import { createCart, getCart, addLine, updateLine, completeCart, resolveRegionId, normalizeCurrency, REGION_COOKIE } from '../../../lib/medusa';
+import { createCart, getCart, addLine, updateLine, completeCart, resolveRegionId, normalizeCurrency, stlVariantMap, REGION_COOKIE } from '../../../lib/medusa';
 export const prerender = false;
 const COOKIE = 'medusa_cart';
 const REGION_MAX_AGE = 60 * 60 * 24 * 365;
@@ -59,6 +59,13 @@ export const POST: APIRoute = async ({ params, request, cookies, redirect }) => 
     const variantId = safeId(form.get('variantId'));
     const qty = Math.max(1, Math.min(99, Number(form.get('qty') ?? 1) || 1));
     if (!variantId) return redirect('/loja');
+    // STL adquire-se via carteira, nunca via cart fiat (guard anti-bypass:
+    // POST manual com variantId não passa — redireciona p/ a peça).
+    try {
+      const stlMap = await stlVariantMap();
+      const itemId = stlMap.get(variantId);
+      if (itemId != null) return redirect(`/modelo/${itemId}`);
+    } catch { /* Medusa fora: segue fluxo normal, addLine falha sozinho */ }
     try {
       const wantCur = normalizeCurrency(cookies.get(REGION_COOKIE)?.value);
       let id = await cartIdFrom(cookies);

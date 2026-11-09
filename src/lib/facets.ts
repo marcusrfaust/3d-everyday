@@ -3,18 +3,20 @@
 // nunca redefinir SQL de vitrine aqui. C2: matemática de página via pagination.ts.
 import { d1query } from './d1';
 import { priceRule } from './plans';
-import { displayName, priceOverrides, DEV_SAMPLE_LIMIT, catalogWhere, photoIdSub, photoLpSub, fotoServivel, type CatalogItem } from './catalog';
+import { displayName, priceOverrides, DEV_SAMPLE_LIMIT, catalogWhere, photoIdSub, photoLpSub, photoDuSub, fotoAnunciavel, type CatalogItem } from './catalog';
+import { rotuloCategoria } from './rotulos';
 import { clampPerPage, normalizePage, pageOffset } from './pagination';
 export interface Facet {slug: string;name: string;count: number;photoId?: number | null;}
 export async function listCategories(): Promise<Facet[]> {
   const rows = await d1query(
     `SELECT c.slug AS slug, c.name AS name, COUNT(*) AS n,
-      (SELECT f.id FROM files f JOIN items i2 ON i2.id = f.item_id WHERE i2.category_id = c.id AND f.kind = 'photo' AND f.local_path IS NOT NULL AND f.local_path <> '' AND ${catalogWhere('i2')} ORDER BY f.id DESC LIMIT 1) AS photoId,
-      (SELECT f.local_path FROM files f JOIN items i2 ON i2.id = f.item_id WHERE i2.category_id = c.id AND f.kind = 'photo' AND f.local_path IS NOT NULL AND f.local_path <> '' AND ${catalogWhere('i2')} ORDER BY f.id DESC LIMIT 1) AS photoLp
+      (SELECT f.id FROM files f JOIN items i2 ON i2.id = f.item_id WHERE i2.category_id = c.id AND f.kind = 'photo' AND ((f.local_path IS NOT NULL AND f.local_path <> '') OR f.drive_url LIKE 'https://drive.google.com/%') AND ${catalogWhere('i2')} ORDER BY f.id DESC LIMIT 1) AS photoId,
+      (SELECT f.local_path FROM files f JOIN items i2 ON i2.id = f.item_id WHERE i2.category_id = c.id AND f.kind = 'photo' AND ((f.local_path IS NOT NULL AND f.local_path <> '') OR f.drive_url LIKE 'https://drive.google.com/%') AND ${catalogWhere('i2')} ORDER BY f.id DESC LIMIT 1) AS photoLp,
+      (SELECT f.drive_url FROM files f JOIN items i2 ON i2.id = f.item_id WHERE i2.category_id = c.id AND f.kind = 'photo' AND ((f.local_path IS NOT NULL AND f.local_path <> '') OR f.drive_url LIKE 'https://drive.google.com/%') AND ${catalogWhere('i2')} ORDER BY f.id DESC LIMIT 1) AS photoDu
      FROM items i JOIN categories c ON c.id = i.category_id
      WHERE ${catalogWhere()} GROUP BY c.slug, c.name ORDER BY n DESC LIMIT ${DEV_SAMPLE_LIMIT}`, []);
   // Capa só com arquivo servível no cache; sem ele, bloco de inicial (sem placeholder).
-  return rows.map((r) => ({slug: String(r.slug), name: String(r.name ?? r.slug), count: Number(r.n), photoId: r.photoId == null || !fotoServivel(r.photoLp) ? null : Number(r.photoId)}));
+  return rows.map((r) => ({slug: String(r.slug), name: rotuloCategoria(r.slug, r.name), count: Number(r.n), photoId: r.photoId == null || !fotoAnunciavel(r.photoLp, r.photoDu) ? null : Number(r.photoId)}));
 }
 export async function listTags(limit = 40): Promise<Facet[]> {
   const rows = await d1query(
@@ -39,13 +41,14 @@ export async function searchItems(opts: {q?: string;category?: string;tag?: stri
     `SELECT i.id AS id, i.name AS name, c.slug AS category, c.name AS category_name,
       ${photoIdSub('i')} AS photoId,
       ${photoLpSub('i')} AS photoLp,
+      ${photoDuSub('i')} AS photoDu,
       (SELECT f2.file_name FROM files f2 WHERE f2.item_id = i.id AND f2.kind = 'document' ORDER BY f2.id ASC LIMIT 1) AS fileName,
       (SELECT COALESCE(SUM(f3.size_bytes),0) FROM files f3 WHERE f3.item_id = i.id AND f3.kind = 'document') AS totalBytes
      FROM items i LEFT JOIN categories c ON c.id = i.category_id
      WHERE ${conds.join(' AND ')} ORDER BY i.created_at DESC LIMIT ? OFFSET ?`, params);
   const overs = rows.length ? await priceOverrides(rows.map((r) => Number(r.id))) : new Map<number, number>();
-  // Garantia final: só anuncia o que o thumb serve (arquivo existe no cache).
-  return rows.filter((r) => fotoServivel(r.photoLp)).map((r) => {
+  // Garantia final: só anuncia o que o thumb serve (local no disco OU Drive).
+  return rows.filter((r) => fotoAnunciavel(r.photoLp, r.photoDu)).map((r) => {
     const id = Number(r.id);
     return {id, name: displayName(String(r.name ?? ''), r.fileName == null ? null : String(r.fileName)), category: r.category == null ? null : String(r.category), categoryName: r.category_name == null ? null : String(r.category_name), photoId: r.photoId == null ? null : Number(r.photoId), price: overs.get(id) ?? priceRule(Number(r.totalBytes ?? 0))};
   });
