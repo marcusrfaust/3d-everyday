@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import CurrencySelector from '../../components/CurrencySelector.astro';
-import { getProduct, priceInCurrency, formatMoney, normalizeCurrency, creditPackOf, REGION_COOKIE } from '../../lib/medusa';
+import { getProduct, priceInCurrency, formatMoney, normalizeCurrency, creditPackOf, isStlProduct, stlItemId, stlCreditsPrice, REGION_COOKIE } from '../../lib/medusa';
 export const prerender = false;
 const handle = String(Astro.params.handle ?? '');
 const requested = Astro.url.searchParams.get('currency');
@@ -19,33 +19,56 @@ const current = chosen ?? pr?.currency_code ?? 'usd';
 // C3/C4: pacote = metadata.credits (dinheiro compra créditos); sem metadata,
 // produto demo fora do catálogo oficial (nunca anunciado como STL/3MF).
 const packCredits = product ? creditPackOf(product) : null;
+// STL (Marcus 06/11/26): aquisicao via carteira — sem form de cart fiat.
+const stlItem = product && isStlProduct(product) ? stlItemId(product) : null;
+const stlCredits = product && isStlProduct(product) ? stlCreditsPrice(product) : null;
+const isStl = product ? isStlProduct(product) : false;
+const stlBannerCred = stlCredits != null ? ` — ${stlCredits} créditos` : '';
+const titulo = product?.title ?? 'Produto';
+const mostraPrecoFiat = !isStl && pr != null;
+const precoFiat = pr ? formatMoney(pr.amount, pr.currency_code) : 'preço sob consulta';
+const avisaMoeda = !isStl && pr != null && !exactPrice;
+const moedaTxt = pr ? pr.currency_code.toUpperCase() : '';
+const variantes = product?.variants ?? [];
+const mostraVariacoes = !isStl && variantes.length > 1;
+const mostraForm = !isStl && variantId !== '';
+const mostraSemVariacao = !isStl && variantId === '';
+const semPrecoMoeda = pr != null && !exactPrice;
 ---
-<Layout title={`${product?.title ?? 'Produto'} — Loja 3d-Everyday`}>
+<Layout title={`${titulo} — Loja 3d-Everyday`}>
 <main class="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 py-8 md:grid-cols-2">
-{packCredits != null
-? <div class="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl bg-brand-800 text-white"><span class="font-mono text-6xl font-extrabold">{packCredits}</span><span class="text-sm font-bold uppercase tracking-widest">créditos</span></div>
-: <div class="flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-stone-200 bg-stone-100">
-{product?.thumbnail ? <img src={product.thumbnail} alt={product.title} class="h-full w-full object-cover" /> : <span class="text-sm text-stone-500">Sem foto no momento.</span>}
-</div>}
+{packCredits != null && (
+<div class="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl bg-brand-800 text-white"><span class="font-mono text-6xl font-extrabold">{packCredits}</span><span class="text-sm font-bold uppercase tracking-widest">créditos</span></div>
+)}
+{packCredits == null && (
+<div class="flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-stone-200 bg-stone-100">
+{product?.thumbnail ? <img src={product.thumbnail} alt={titulo} class="h-full w-full object-cover" /> : <span class="text-sm text-stone-500">Sem foto no momento.</span>}
+</div>
+)}
 <div class="flex flex-col gap-4">
-<p class="text-sm text-stone-500"><a href="/" class="hover:underline">Início</a> / <a href="/loja/creditos" class="hover:underline">Créditos</a> / {product?.title}</p>
-{packCredits != null
-? <p class="rounded-xl border border-brand-600/30 bg-brand-600/5 p-3 text-sm text-brand-700">Pacote de <strong>{packCredits} créditos</strong> — cai na sua carteira após a confirmação do pagamento.</p>
-: <p class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Produto de demonstração — fora do catálogo oficial de STL/3MF (ver <a href="/loja" class="font-semibold underline">loja</a>).</p>}
+<p class="text-sm text-stone-500"><a href="/" class="hover:underline">Início</a> / {isStl ? <a href="/loja" class="hover:underline">Loja</a> : <a href="/loja/creditos" class="hover:underline">Créditos</a>} / {titulo}</p>
+{isStl && <p class="rounded-xl border border-brand-600/30 bg-brand-600/5 p-3 text-sm text-brand-700">Projeto do acervo{stlBannerCred}. A aquisição debita da sua carteira na página da peça.</p>}
+{!isStl && packCredits != null && <p class="rounded-xl border border-brand-600/30 bg-brand-600/5 p-3 text-sm text-brand-700">Pacote de <strong>{packCredits} créditos</strong> — cai na sua carteira após a confirmação do pagamento.</p>}
+{!isStl && packCredits == null && <p class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Produto de demonstração — fora do catálogo oficial de STL/3MF (ver <a href="/loja" class="font-semibold underline">loja</a>).</p>}
 <div class="flex items-center justify-end"><CurrencySelector current={current} next={`/loja/${handle}`} /></div>
-{erro ? <p class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">Loja indisponível ({erro}).</p> : null}
-<h1 class="font-display text-3xl font-extrabold tracking-tight">{product?.title}</h1>
-{packCredits != null ? <p class="font-mono text-2xl font-bold text-brand-700">{packCredits} créditos</p> : null}
-<p class="font-mono text-2xl font-bold text-brand-700">{pr ? formatMoney(pr.amount, pr.currency_code) : 'preço sob consulta'}</p>
-{pr && !exactPrice ? <p class="text-xs text-stone-500">Preço exibido em {pr.currency_code.toUpperCase()} — sem preço nesta moeda no momento.</p> : null}
-{(product?.variants?.length ?? 0) > 1 ? <p class="text-sm text-stone-500">Variação: {product?.variants?.[0]?.title ?? 'única'} (+{(product?.variants?.length ?? 1) - 1} opções no checkout)</p> : null}
-{variantId ? <form method="post" action="/api/cart/add">
+{erro && <p class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">Loja indisponível ({erro}).</p>}
+<h1 class="font-display text-3xl font-extrabold tracking-tight">{titulo}</h1>
+{isStl && stlCredits != null && <p class="font-mono text-2xl font-bold text-brand-700">{stlCredits} créditos</p>}
+{!isStl && packCredits != null && <p class="font-mono text-2xl font-bold text-brand-700">{packCredits} créditos</p>}
+{mostraPrecoFiat && <p class="font-mono text-2xl font-bold text-brand-700">{precoFiat}</p>}
+{avisaMoeda && <p class="text-xs text-stone-500">Preço exibido em {moedaTxt} — sem preço nesta moeda no momento.</p>}
+{mostraVariacoes && <p class="text-sm text-stone-500">Variação: {variantes[0]?.title ?? 'única'} (+{variantes.length - 1} opções no checkout)</p>}
+{isStl && stlItem != null && <a href={`/modelo/${stlItem}`} class="flex h-12 w-full items-center justify-center bg-brand-600 px-4 text-sm font-semibold uppercase text-white transition hover:bg-brand-700">Ver peça — adquirir com créditos</a>}
+{mostraForm && (
+<form method="post" action="/api/cart/add">
 <input type="hidden" name="variantId" value={variantId} />
 <div class="flex items-center gap-3">
 <label for="qty" class="text-sm font-semibold">Qtd</label><input id="qty" type="number" name="qty" value="1" min="1" max="99" class="ml-2 w-16 rounded-md border border-stone-300 px-2 py-2" />
 <button type="submit" aria-label="Adicionar ao carrinho" class="flex h-12 flex-1 cursor-pointer items-center justify-center bg-brand-600 px-4 text-sm font-semibold uppercase text-white transition hover:bg-brand-700">Adicionar ao carrinho</button>
 </div>
-</form> : <p class="text-sm text-stone-500">{pr && !exactPrice ? 'Produto sem preço nesta moeda no momento — troque a moeda para comprar.' : 'Produto sem variação comprável no momento.'}</p>}
+</form>
+)}
+{mostraSemVariacao && <p class="text-sm text-stone-500">{semPrecoMoeda ? 'Produto sem preço nesta moeda no momento — troque a moeda para comprar.' : 'Produto sem variação comprável no momento.'}</p>}
 </div>
 </main>
 </Layout>

@@ -2,7 +2,7 @@
 // Roda: npm test. Gerado por `npm run build:test` (esbuild de src/lib/medusa.ts).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatMoney, productPrice, priceInCurrency, cartCount, creditPackOf, normalizeCurrency, resolveRequestCurrency, localeForCurrency, resolveRegionId } from './_medusa.mjs';
+import { formatMoney, productPrice, priceInCurrency, cartCount, creditPackOf, isStlProduct, stlItemId, stlCreditsPrice, normalizeCurrency, resolveRequestCurrency, localeForCurrency, resolveRegionId } from './_medusa.mjs';
 
 test('normalizeCurrency aceita USD/EUR/BRL (case/trim) e rejeita resto', () => {
   assert.equal(normalizeCurrency('USD'), 'usd');
@@ -78,15 +78,29 @@ test('cartCount soma quantidades', () => {
   assert.equal(cartCount({ id: 'c', currency_code: 'usd', total: 0, items: [] }), 0);
 });
 
-test('creditPackOf lê SÓ metadata.credits (C3); nunca deduz do título', () => {
+test('creditPackOf exige kind credit_pack (C3); STL nunca é pacote', () => {
   const base = { id: 'p', title: 'Pacote 500 créditos', handle: 'h', thumbnail: null };
-  assert.equal(creditPackOf({ ...base, metadata: { credits: 500 } }), 500);
-  assert.equal(creditPackOf({ ...base, metadata: { credits: '1500' } }), 1500);
+  assert.equal(creditPackOf({ ...base, metadata: { kind: 'credit_pack', credits: 500 } }), 500);
+  assert.equal(creditPackOf({ ...base, metadata: { kind: 'credit_pack', credits: '1500' } }), 1500);
   assert.equal(creditPackOf(base), null); // sem metadata → não é pacote
   assert.equal(creditPackOf({ ...base, metadata: null }), null);
   assert.equal(creditPackOf({ ...base, metadata: {} }), null);
-  assert.equal(creditPackOf({ ...base, metadata: { credits: 0 } }), null);
-  assert.equal(creditPackOf({ ...base, metadata: { credits: -10 } }), null);
-  assert.equal(creditPackOf({ ...base, metadata: { credits: 2.5 } }), null);
-  assert.equal(creditPackOf({ ...base, metadata: { credits: 'abc' } }), null);
+  assert.equal(creditPackOf({ ...base, metadata: { credits: 500 } }), 500); // legado sem kind (transição)
+  assert.equal(creditPackOf({ ...base, metadata: { kind: 'stl', item_id: 1, credits_price: 500, credits: 500 } }), null); // STL ≠ pacote
+  assert.equal(creditPackOf({ ...base, metadata: { kind: 'credit_pack', credits: 0 } }), null);
+  assert.equal(creditPackOf({ ...base, metadata: { kind: 'credit_pack', credits: -10 } }), null);
+  assert.equal(creditPackOf({ ...base, metadata: { kind: 'credit_pack', credits: 2.5 } }), null);
+  assert.equal(creditPackOf({ ...base, metadata: { kind: 'credit_pack', credits: 'abc' } }), null);
+});
+
+test('STL: isStlProduct/stlItemId/stlCreditsPrice (Marcus 06/11/26)', () => {
+  const stl = { id: 'p', title: 'Zenitsu', handle: 'stl-34258', thumbnail: null, metadata: { kind: 'stl', item_id: 34258, credits_price: 600 } };
+  assert.equal(isStlProduct(stl), true);
+  assert.equal(stlItemId(stl), 34258);
+  assert.equal(stlCreditsPrice(stl), 600);
+  assert.equal(isStlProduct({ id: 'x', title: 'T', handle: 't', thumbnail: null }), false);
+  assert.equal(isStlProduct({ id: 'x', title: 'T', handle: 't', thumbnail: null, metadata: { kind: 'credit_pack', credits: 1 } }), false);
+  assert.equal(stlItemId({ id: 'x', title: 'T', handle: 't', thumbnail: null, metadata: { kind: 'stl', item_id: 0, credits_price: 5 } }), null);
+  assert.equal(stlItemId({ id: 'x', title: 'T', handle: 't', thumbnail: null, metadata: { kind: 'stl', credits_price: 5 } }), null);
+  assert.equal(stlCreditsPrice({ id: 'x', title: 'T', handle: 't', thumbnail: null, metadata: { kind: 'stl', item_id: 1 } }), null);
 });

@@ -33,7 +33,7 @@ const urlPagina = (p: number) => buildPageUrl('/busca', filtros, p);
 <aside class="flex w-64 flex-col gap-5 rounded-xl border border-stone-200 bg-white p-4">
 <form method="get" action="/busca" role="search">
 <label for="busca-q" class="text-xs font-bold uppercase tracking-widest text-stone-500">Buscar</label>
-<input id="busca-q" type="search" name="q" value={q} placeholder="nome da peça" class="mt-1 h-10 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 text-sm">
+<input id="busca-q" type="search" name="q" value={q} placeholder="nome da peça" aria-label="Buscar peças" class="mt-1 h-10 w-full rounded-full border border-stone-200 bg-stone-50 px-3 text-sm">
 <button type="submit" class="mt-2 flex h-12 w-full cursor-pointer items-center justify-center bg-brand-600 px-4 text-sm font-semibold uppercase text-white transition hover:bg-brand-700">Buscar</button>
 </form>
 <div>
@@ -58,11 +58,11 @@ const urlPagina = (p: number) => buildPageUrl('/busca', filtros, p);
 <p class="text-xs font-bold uppercase tracking-widest text-brand-600">{q || category || tag ? 'Resultados' : 'Catálogo'}</p>
 <h1 class="mt-1 font-display text-2xl font-extrabold tracking-tight md:text-3xl">{q || category || tag ? 'Resultados' : 'Todas as peças'}</h1>
 {erro ? <p class="mt-2 text-sm text-red-700" role="alert">Busca indisponível ({erro}).</p> : <>
-<p class="mt-1 font-mono text-sm text-stone-500">{total} peças{pages > 1 ? ` — página ${page} de ${pages}` : '.'}</p>
+<p class="mt-1 font-mono text-sm text-stone-500">{total === 1 ? '1 peça' : `${total} peças`}{pages > 1 ? ` — página ${page} de ${pages}` : ''}</p>
 <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 {items.map((it, idx) => (<ModelCard item={it} eager={idx === 0} />))}
 </div>
-{!items.length ? <p class="mt-6 text-sm text-stone-500">Nada por aqui. <a href="/busca" class="font-semibold text-brand-600 hover:underline">Ver tudo</a></p> : null}
+{!items.length ? <div class="mt-6 rounded-xl border border-dashed border-stone-300 bg-white p-6 text-sm text-stone-600"><p class="font-bold text-stone-800">Nada por aqui — ainda.</p><p class="mt-1">Tente outro termo, ou explore <a href="/busca" class="font-semibold text-brand-600 hover:underline">todas as peças</a> e a <a href="/loja" class="font-semibold text-brand-600 hover:underline">loja</a>.</p></div> : null}
 {pages > 1 ? <nav aria-label="Paginação" class="mt-8 flex flex-wrap items-center gap-2">
 {page > 1 ? <a href={urlPagina(page - 1)} rel="prev" class="rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-semibold hover:border-brand-600 hover:text-brand-600">← Anterior</a> : null}
 {win.map((p, i) => (<>

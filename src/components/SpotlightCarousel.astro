@@ -7,6 +7,7 @@ const {heading = 'Em destaque agora'} = Astro.props;
 let items: Awaited<ReturnType<typeof listRecent>> = [];
 try { items = await listRecent(10); } catch { items = []; }
 ---
+{items.length ? (
 <section aria-label={heading}>
 <SectionHeader eyebrow="Destaques" title={heading} linkHref="/busca" linkLabel="Ver tudo →" />
 <div class="mt-5 flex snap-x gap-4 overflow-x-auto pb-4" tabindex="0" role="region" aria-label={`${heading} — role para ver mais`}>
@@ -15,3 +16,4 @@ try { items = await listRecent(10); } catch { items = []; }
 ))}
 </div>
 </section>
+) : null}

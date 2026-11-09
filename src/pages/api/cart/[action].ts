@@ -2,7 +2,7 @@
 // cookie medusa_region guarda a moeda escolhida (usd/eur/brl).
 // POST /api/cart/add | /update | /checkout | /currency (Astro SSR, server-side, chave nunca vaza).
 import type { APIRoute } from 'astro';
-import { createCart, getCart, addLine, updateLine, completeCart, resolveRegionId, normalizeCurrency, REGION_COOKIE } from '../../../lib/medusa';
+import { createCart, getCart, addLine, updateLine, completeCart, resolveRegionId, normalizeCurrency, stlVariantMap, REGION_COOKIE } from '../../../lib/medusa';
 export const prerender = false;
 const COOKIE = 'medusa_cart';
 const REGION_MAX_AGE = 60 * 60 * 24 * 365;
@@ -59,6 +59,13 @@ export const POST: APIRoute = async ({ params, request, cookies, redirect }) => 
     const variantId = safeId(form.get('variantId'));
     const qty = Math.max(1, Math.min(99, Number(form.get('qty') ?? 1) || 1));
     if (!variantId) return redirect('/loja');
+    // STL adquire-se via carteira, nunca via cart fiat (guard anti-bypass:
+    // POST manual com variantId não passa — redireciona p/ a peça).
+    try {
+      const stlMap = await stlVariantMap();
+      const itemId = stlMap.get(variantId);
+      if (itemId != null) return redirect(`/modelo/${itemId}`);
+    } catch { /* Medusa fora: segue fluxo normal, addLine falha sozinho */ }
     try {
       const wantCur = normalizeCurrency(cookies.get(REGION_COOKIE)?.value);
       let id = await cartIdFrom(cookies);
@@ -85,7 +92,18 @@ export const POST: APIRoute = async ({ params, request, cookies, redirect }) => 
     const qty = Math.max(0, Math.min(99, Number(form.get('qty') ?? 0) || 0));
     const id = await cartIdFrom(cookies);
     if (id && lineId) {
-      try { await updateLine(id, lineId, qty); } catch { return redirect('/loja/carrinho?erro=checkout'); }
+      try {
+        // STL nao mora em cart: linha STL e removida e o usuario vai p/ a peca.
+        const cart = await getCart(id).catch(() => null);
+        const line = cart?.items.find((l) => l.id === lineId);
+        const stlMap = await stlVariantMap().catch(() => new Map());
+        const itemId = line?.variant_id ? stlMap.get(line.variant_id) : undefined;
+        if (itemId != null) {
+          await updateLine(id, lineId, 0).catch(() => null);
+          return redirect(`/modelo/${itemId}`);
+        }
+        await updateLine(id, lineId, qty);
+      } catch { return redirect('/loja/carrinho?erro=checkout'); }
     }
     return redirect('/loja/carrinho');
   }
@@ -93,6 +111,14 @@ export const POST: APIRoute = async ({ params, request, cookies, redirect }) => 
     const id = await cartIdFrom(cookies);
     if (!id) return redirect('/loja/carrinho');
     try {
+      // Revalida antes de completar: cart com linha STL nao fecha (limpa e volta).
+      const cart = await getCart(id).catch(() => null);
+      const stlMap = await stlVariantMap().catch(() => new Map());
+      const stlLines = (cart?.items ?? []).filter((l) => l.variant_id != null && stlMap.has(l.variant_id));
+      if (stlLines.length) {
+        for (const l of stlLines) await updateLine(id, l.id, 0).catch(() => null);
+        return redirect('/loja/carrinho?erro=stl');
+      }
       await completeCart(id);
       cookies.delete(COOKIE, { path: '/' });
       return redirect('/loja/carrinho?checkout=ok');

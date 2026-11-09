@@ -4,6 +4,7 @@ import type { APIRoute } from 'astro';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { d1query } from '../../../lib/d1';
+import { driveThumb } from '../../../lib/catalog';
 export const prerender = false;
 const LOCAL_CACHE_DIR = resolve(process.env.HOME ?? '/home/altas', '3dlib-cache');
 const MIME: Record<string, string> = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp'};
@@ -15,7 +16,7 @@ function semFoto(): Response {
 export const GET: APIRoute = async ({ params }) => {
   const fileId = Number(params.fileId);
   if (!Number.isInteger(fileId)) return new Response('Not found', {status: 404});
-  const rows = await d1query(`SELECT f.local_path AS lp, f.drive_url AS du FROM files f JOIN items i ON i.id = f.item_id WHERE f.id = ? AND f.kind = 'photo' AND i.is_adult = 0 LIMIT 1`, [fileId]);
+  const rows = await d1query(`SELECT f.local_path AS lp, f.drive_url AS du FROM files f JOIN items i ON i.id = f.item_id WHERE f.id = ? AND f.kind = 'photo' AND i.is_adult = 0 AND i.status IN ('reposted','captured') LIMIT 1`, [fileId]);
   if (!rows.length) return semFoto();
   const lp = String(rows[0].lp ?? '');
   const resolved = resolve(lp || '.');
@@ -24,7 +25,9 @@ export const GET: APIRoute = async ({ params }) => {
       const buf = await readFile(resolved);
       const ext = resolved.slice(resolved.lastIndexOf('.')).toLowerCase();
       return new Response(buf, {status: 200, headers: {'Content-Type': MIME[ext] ?? 'application/octet-stream', 'Cache-Control': 'private, max-age=86400'}});
-    } catch { /* sem arquivo local: placeholder */ }
+    } catch { /* sem arquivo local: tenta Drive */ }
   }
+  const dt = driveThumb(String(rows[0].du ?? ''));
+  if (dt) return Response.redirect(dt, 302);
   return semFoto();
 };
