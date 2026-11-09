@@ -58,6 +58,17 @@ export async function resolveRegionId(currency?: unknown): Promise<string> {
   }
   return regions[0].id;
 }
+// Pagina-tudo com teto anti-abuso (N4 r2): scan completo sem loop infinito.
+export async function listAllProducts(maxItems = 500): Promise<StoreProduct[]> {
+  const out: StoreProduct[] = [];
+  const step = 100;
+  for (let offset = 0; offset < maxItems; offset += step) {
+    const page = await listProducts(step, offset);
+    out.push(...page);
+    if (page.length < step) break;
+  }
+  return out.slice(0, maxItems);
+}
 export async function listProducts(limit = 24, offset = 0): Promise<StoreProduct[]> {
   const d = await store(`/store/products?limit=${Math.min(limit, 100)}&offset=${Math.max(0, offset)}&fields=id,title,handle,thumbnail,metadata,*variants.prices`);
   return (d.products ?? []).map((p: any) => ({
@@ -116,23 +127,17 @@ export function stlCreditsPrice(p: StoreProduct): number | null {
 export async function stlVariantMap(): Promise<Map<string, number>> {
   const m = new Map<string, number>();
   // Pagina ate esgotar: acervo >100 nao pode deixar variante STL fora do mapa.
-  let offset = 0;
-  for (;;) {
-    const page = await listProducts(100, offset).catch(() => []);
-    if (!page.length) break;
-    for (const p of page) {
+  const all = await listAllProducts().catch(() => []);
+  for (const p of all) {
     if (!isStlProduct(p)) continue;
     const itemId = stlItemId(p);
-      if (itemId == null) continue;
-      for (const v of p.variants ?? []) m.set(v.id, itemId);
-    }
-    if (page.length < 100) break;
-    offset += page.length;
+    if (itemId == null) continue;
+    for (const v of p.variants ?? []) m.set(v.id, itemId);
   }
   return m;
 }
 export async function listCreditPacks(limit = 24): Promise<Array<{ pack: StoreProduct; credits: number }>> {
-  const all = await listProducts(Math.min(Math.max(1, limit * 2), 100));
+  const all = await listAllProducts(Math.max(100, limit * 2));
   const packs: Array<{ pack: StoreProduct; credits: number }> = [];
   for (const p of all) {
     const c = creditPackOf(p);
@@ -143,7 +148,7 @@ export async function listCreditPacks(limit = 24): Promise<Array<{ pack: StorePr
 }
 // Projetos STL publicados (grade oficial do acervo no /app/products).
 export async function listStlProducts(limit = 24): Promise<Array<{ product: StoreProduct; itemId: number; credits: number }>> {
-  const all = await listProducts(Math.min(Math.max(1, limit * 2), 100));
+  const all = await listAllProducts(Math.max(100, limit * 2));
   const out: Array<{ product: StoreProduct; itemId: number; credits: number }> = [];
   for (const p of all) {
     if (!isStlProduct(p)) continue;

@@ -22,12 +22,13 @@ import urllib.error
 MEDUSA_URL = os.environ.get('MEDUSA_URL', 'http://127.0.0.1:9000').rstrip('/')
 THUMB_BASE = os.environ.get('THUMB_BASE', 'https://3de.focol.ai/api/thumb')
 LIMIT = 24
+HARD_CAP = 100
 DRY_RUN = False
 for i, a in enumerate(sys.argv[1:]):
     if a == '--dry-run':
         DRY_RUN = True
     elif a == '--limit' and i + 2 <= len(sys.argv[1:]):
-        LIMIT = max(1, min(100, int(sys.argv[2 + i])))
+        LIMIT = max(1, min(HARD_CAP, int(sys.argv[2 + i])))
 
 D1_ACCT = os.environ['D1_ACCOUNT_ID']
 D1_DB = os.environ['D1_DATABASE_ID']
@@ -91,11 +92,11 @@ rows = d1(D1_ACCT, D1_DB,
           "WHERE i.status IN ('reposted','captured') AND i.is_adult=0 "
           "AND EXISTS (SELECT 1 FROM files d WHERE d.item_id=i.id AND d.kind='document' AND " + DRV + ") "
           "AND EXISTS (SELECT 1 FROM files f WHERE f.item_id=i.id AND f.kind='photo' AND " + LP + ") "
-          "ORDER BY i.created_at DESC LIMIT 80")
+          "ORDER BY i.created_at DESC LIMIT %d" % HARD_CAP)
 
 overs = {}
-if ACCT_DB:
-    ids = [int(r['id']) for r in rows]
+ids = [int(r['id']) for r in rows]
+if ACCT_DB and ids:
     ph = ','.join('?' * len(ids))
     for r in d1(D1_ACCT, ACCT_DB,
                 'SELECT item_id, price FROM item_prices WHERE item_id IN (%s)' % ph, ids):
@@ -138,10 +139,36 @@ def med(path, method='GET', body=None, token=None):
         return e.code, e.read().decode()[:1000]
 
 
+# Auditoria N2/N3 r2: variante STL JAMAIS tem price (invariante anti-bypass).
+# Varre stl-* existentes; com prices -> tenta zerar via Admin, senao falha alto.
+def audit_stl(TOK):
+    bad = []
+    seen, offset = 0, 0
+    for _ in range(10):
+        st, d = med('/admin/products?limit=100&offset=%d&fields=id,handle,*variants.prices' % offset, token=TOK)
+        if st != 200: break
+        prods = d.get('products', [])
+        if not prods: break
+        for p in prods:
+            if not str(p.get('handle', '')).startswith('stl-'): continue
+            seen += 1
+            for v in p.get('variants', []):
+                if v.get('prices'):
+                    vst, _ = med('/admin/products/%s/variants/%s' % (p['id'], v['id']), 'POST',
+                                 {'prices': []}, TOK)
+                    if vst not in (200, 201): bad.append('%s/%s' % (p['handle'], v['id']))
+        if len(prods) < 100: break
+        offset += 100
+    print('auditoria STL: %d produtos stl-*, %d com price remanescente' % (seen, len(bad)))
+    if bad:
+        print('FALHA: variantes STL com price fiat: %s' % bad[:5])
+        sys.exit(2)
+
 st, d = med('/auth/user/emailpass', 'POST', {'email': ADMIN_EMAIL, 'password': ADMIN_PASS})
 if st != 200 or not d.get('token'):
     sys.exit('auth Medusa falhou: HTTP %s' % st)
 TOK = d['token']
+audit_stl(TOK)
 
 st, d = med('/admin/sales-channels?limit=5', token=TOK)
 sc = (d.get('sales_channels') or [{}])[0].get('id')

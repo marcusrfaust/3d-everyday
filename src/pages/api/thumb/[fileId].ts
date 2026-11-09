@@ -16,7 +16,7 @@ function semFoto(): Response {
 export const GET: APIRoute = async ({ params }) => {
   const fileId = Number(params.fileId);
   if (!Number.isInteger(fileId)) return new Response('Not found', {status: 404});
-  const rows = await d1query(`SELECT f.local_path AS lp, f.drive_url AS du FROM files f JOIN items i ON i.id = f.item_id WHERE f.id = ? AND f.kind = 'photo' AND i.is_adult = 0 LIMIT 1`, [fileId]);
+  const rows = await d1query(`SELECT f.local_path AS lp, f.drive_url AS du FROM files f JOIN items i ON i.id = f.item_id WHERE f.id = ? AND f.kind = 'photo' AND i.is_adult = 0 AND i.status IN ('reposted','captured') LIMIT 1`, [fileId]);
   if (!rows.length) return semFoto();
   const lp = String(rows[0].lp ?? '');
   const resolved = resolve(lp || '.');
